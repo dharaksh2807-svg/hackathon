@@ -1,0 +1,302 @@
+"use client";
+
+import React, { useState } from "react";
+import type { Shift, Dispute, EarningsResponse, DemoPersona } from "@/lib/api-client/types";
+import { ShiftCard } from "./ShiftCard";
+import { CheckOutModal } from "./CheckOutModal";
+import { EarningsBreakdownModal } from "./EarningsBreakdownModal";
+import { RaiseDisputeModal } from "../disputes/RaiseDisputeModal";
+import { DisputeDetailModal } from "../disputes/DisputeDetailModal";
+import { Badge } from "../common/Badge";
+import { EmptyState } from "../common/EmptyState";
+import { formatPaise } from "@/lib/api-client/currency";
+import { useToast } from "../common/Toast";
+
+interface WorkerDashboardProps {
+  persona: DemoPersona;
+  shifts: Shift[];
+  disputes: Dispute[];
+  earnings: EarningsResponse["data"] | null;
+  onCheckIn: (shiftId: string) => Promise<void>;
+  onCheckOut: (shiftId: string, unpaidBreakMinutes: number) => Promise<void>;
+  onCreateDispute: (shiftId: string, reason: string) => Promise<void>;
+}
+
+export function WorkerDashboard({
+  persona,
+  shifts,
+  disputes,
+  earnings,
+  onCheckIn,
+  onCheckOut,
+  onCreateDispute,
+}: WorkerDashboardProps) {
+  const { showToast } = useToast();
+  const [activeFilter, setActiveFilter] = useState<"ALL" | "DISCREPANCIES" | "ACTIVE" | "COMPLETED">("ALL");
+
+  // Modal states
+  const [checkoutShift, setCheckoutShift] = useState<Shift | null>(null);
+  const [breakdownShift, setBreakdownShift] = useState<Shift | null>(null);
+  const [disputeShift, setDisputeShift] = useState<Shift | null>(null);
+  const [inspectDispute, setInspectDispute] = useState<Dispute | null>(null);
+  const [checkInLoadingId, setCheckInLoadingId] = useState<string | null>(null);
+
+  const handleCheckInClick = async (shiftId: string) => {
+    setCheckInLoadingId(shiftId);
+    try {
+      await onCheckIn(shiftId);
+      showToast({
+        type: "success",
+        title: "Checked In Successfully",
+        message: "Attendance timestamp recorded from server time.",
+      });
+    } catch (err: unknown) {
+      showToast({
+        type: "error",
+        title: "Check-In Failed",
+        message: err instanceof Error ? err.message : "Unable to record check-in.",
+      });
+    } finally {
+      setCheckInLoadingId(null);
+    }
+  };
+
+  const handleCheckOutSubmit = async (shiftId: string, unpaidBreakMinutes: number) => {
+    await onCheckOut(shiftId, unpaidBreakMinutes);
+    showToast({
+      type: "success",
+      title: "Shift Completed & Attested",
+      message: `Checked out with ${unpaidBreakMinutes}m break. Pay calculated based on shift rule snapshot.`,
+    });
+  };
+
+  const handleCreateDisputeSubmit = async (shiftId: string, reason: string) => {
+    await onCreateDispute(shiftId, reason);
+    showToast({
+      type: "warning",
+      title: "Dispute Opened",
+      message: "Wage dispute registered in the organization audit queue.",
+    });
+  };
+
+  // Filter shifts
+  const filteredShifts = shifts.filter((shift) => {
+    if (activeFilter === "DISCREPANCIES") {
+      return shift.comparisonStatus === "UNDERPAID";
+    }
+    if (activeFilter === "ACTIVE") {
+      return shift.status === "PLANNED" || shift.status === "CHECKED_IN";
+    }
+    if (activeFilter === "COMPLETED") {
+      return shift.status === "COMPLETED";
+    }
+    return true;
+  });
+
+  const underpaidCount = shifts.filter((s) => s.comparisonStatus === "UNDERPAID").length;
+  const netShortfallPaise = shifts
+    .filter((s) => s.comparisonStatus === "UNDERPAID" && s.differenceMinor && s.differenceMinor > 0)
+    .reduce((acc, s) => acc + (s.differenceMinor ?? 0), 0);
+
+  return (
+    <div className="space-y-6">
+      {/* Monthly Financial Reconciliation Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card 1: Expected Earnings */}
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-1">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            <span>Expected Pay (Month)</span>
+            <span className="text-emerald-700 font-bold">Statutory</span>
+          </div>
+          <div className="text-2xl font-black text-slate-900 tracking-tight">
+            {earnings ? formatPaise(earnings.totalExpectedMinor) : "₹0.00"}
+          </div>
+          <div className="text-xs text-slate-500">
+            Based on {earnings?.completedCount ?? 0} completed shifts in October 2026
+          </div>
+        </div>
+
+        {/* Card 2: Recorded Pay */}
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-1">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            <span>Employer Recorded</span>
+            <span className="text-slate-600">Disbursed</span>
+          </div>
+          <div className="text-2xl font-black text-slate-900 tracking-tight">
+            {earnings ? formatPaise(earnings.totalRecordedMinor) : "₹0.00"}
+          </div>
+          <div className="text-xs text-slate-500">
+            {earnings?.recordedCount ?? 0} of {earnings?.completedCount ?? 0} shifts recorded by site supervisor
+          </div>
+        </div>
+
+        {/* Card 3: Wage Discrepancies Alert */}
+        <div
+          className={`p-5 rounded-xl border shadow-xs space-y-1 ${
+            underpaidCount > 0
+              ? "bg-amber-50/70 border-amber-300 text-amber-950"
+              : "bg-white border-slate-200 text-slate-900"
+          }`}
+        >
+          <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider">
+            <span>Wage Shortfall</span>
+            {underpaidCount > 0 && <span className="text-amber-800 font-bold">Action Needed</span>}
+          </div>
+          <div className="text-2xl font-black tracking-tight">
+            {underpaidCount > 0 ? formatPaise(netShortfallPaise) : "₹0.00"}
+          </div>
+          <div className="text-xs text-slate-600">
+            {underpaidCount > 0
+              ? `${underpaidCount} shift${underpaidCount > 1 ? "s" : ""} underpaid`
+              : "All completed shifts fully matched"}
+          </div>
+        </div>
+
+        {/* Card 4: Active Disputes Queue */}
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-1">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            <span>Active Disputes</span>
+            <span className="text-sky-700 font-bold">Audit</span>
+          </div>
+          <div className="text-2xl font-black text-slate-900 tracking-tight">
+            {disputes.filter((d) => d.status === "OPEN").length}
+          </div>
+          <div className="text-xs text-slate-500">
+            {disputes.length} total dispute case{disputes.length === 1 ? "" : "s"} tracked
+          </div>
+        </div>
+      </div>
+
+      {/* Shifts Section Header & Filter Tabs */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
+        <div>
+          <h2 className="text-lg font-bold text-slate-900">
+            My Shift Ledger & Attendance History
+          </h2>
+          <p className="text-xs text-slate-500">
+            Organization: {persona.organizationName} ({persona.sector === "construction" ? "Civil Construction" : "Campus Facilities"})
+          </p>
+        </div>
+
+        <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={() => setActiveFilter("ALL")}
+            className={`px-3 py-1.5 rounded-md font-medium transition-all ${
+              activeFilter === "ALL"
+                ? "bg-white text-slate-900 shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            All ({shifts.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveFilter("DISCREPANCIES")}
+            className={`px-3 py-1.5 rounded-md font-medium transition-all flex items-center gap-1.5 ${
+              activeFilter === "DISCREPANCIES"
+                ? "bg-amber-500 text-white shadow-xs font-semibold"
+                : "text-amber-900 hover:bg-amber-100/50"
+            }`}
+          >
+            <span>Underpaid</span>
+            {underpaidCount > 0 && (
+              <span className="bg-amber-950/20 px-1.5 py-0.2 rounded-full text-[10px]">
+                {underpaidCount}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveFilter("ACTIVE")}
+            className={`px-3 py-1.5 rounded-md font-medium transition-all ${
+              activeFilter === "ACTIVE"
+                ? "bg-white text-slate-900 shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            Active / Planned
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveFilter("COMPLETED")}
+            className={`px-3 py-1.5 rounded-md font-medium transition-all ${
+              activeFilter === "COMPLETED"
+                ? "bg-white text-slate-900 shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            Completed
+          </button>
+        </div>
+      </div>
+
+      {/* Shifts List */}
+      {filteredShifts.length === 0 ? (
+        <EmptyState
+          title="No shifts found in this view"
+          description={
+            activeFilter === "DISCREPANCIES"
+              ? "Great news! No wage discrepancies were found in your completed shifts."
+              : "No shifts match the selected filter criteria."
+          }
+          action={
+            activeFilter !== "ALL"
+              ? { label: "View All Shifts", onClick: () => setActiveFilter("ALL") }
+              : undefined
+          }
+        />
+      ) : (
+        <div className="grid grid-cols-1 gap-4">
+          {filteredShifts.map((shift) => {
+            const shiftDispute = disputes.find((d) => d.shiftId === shift.id);
+            return (
+              <ShiftCard
+                key={shift.id}
+                shift={shift}
+                dispute={shiftDispute}
+                onCheckIn={handleCheckInClick}
+                onCheckOut={(s) => setCheckoutShift(s)}
+                onViewBreakdown={(s) => setBreakdownShift(s)}
+                onRaiseDispute={(s) => setDisputeShift(s)}
+                onViewDispute={(d) => setInspectDispute(d)}
+                isCheckInLoading={checkInLoadingId === shift.id}
+              />
+            );
+          })}
+        </div>
+      )}
+
+      {/* Modals */}
+      <CheckOutModal
+        shift={checkoutShift}
+        isOpen={Boolean(checkoutShift)}
+        onClose={() => setCheckoutShift(null)}
+        onSubmit={handleCheckOutSubmit}
+      />
+
+      <EarningsBreakdownModal
+        shift={breakdownShift}
+        dispute={breakdownShift ? disputes.find((d) => d.shiftId === breakdownShift.id) : null}
+        isOpen={Boolean(breakdownShift)}
+        onClose={() => setBreakdownShift(null)}
+        onRaiseDispute={(s) => setDisputeShift(s)}
+        onViewDispute={(d) => setInspectDispute(d)}
+      />
+
+      <RaiseDisputeModal
+        shift={disputeShift}
+        isOpen={Boolean(disputeShift)}
+        onClose={() => setDisputeShift(null)}
+        onSubmit={handleCreateDisputeSubmit}
+      />
+
+      <DisputeDetailModal
+        dispute={inspectDispute}
+        shift={inspectDispute ? shifts.find((s) => s.id === inspectDispute.shiftId) : null}
+        isOpen={Boolean(inspectDispute)}
+        onClose={() => setInspectDispute(null)}
+      />
+    </div>
+  );
+}
