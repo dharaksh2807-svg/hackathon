@@ -1,3 +1,4 @@
+
 -- FairShift Phase 0; apply with Supabase SQL migrations. No data-changing public RPC.
 -- Currency: INR, stored as integer paise; times: timestamptz (UTC on the API wire).
 BEGIN;
