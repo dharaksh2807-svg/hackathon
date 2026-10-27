@@ -1,8 +1,11 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700;900&family=Noto+Sans+Tamil:wght@400;600;700;900&family=Noto+Sans+Telugu:wght@400;600;700;900&display=swap');
 @import "tailwindcss";
 
 :root {
   color-scheme: light;
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    "Noto Sans Devanagari", "Noto Sans Tamil", "Noto Sans Telugu",
+    Arial, sans-serif;
   --color-slate-50: #f8fafc;
   --color-slate-100: #f1f5f9;
   --color-slate-200: #e2e8f0;
@@ -17,6 +20,18 @@ body {
   color: #0f172a;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Indian script rendering — larger line-height and letter-spacing */
+:lang(hi), :lang(ta), :lang(te), :lang(kn), :lang(ml), :lang(mr), :lang(bn) {
+  line-height: 1.7;
+  letter-spacing: 0;
+  word-spacing: 0.05em;
+}
+
+/* Mobile-first tap targets — minimum 36px */
+button {
+  min-height: 36px;
 }
 
 /* Accessible focus visible treatment */

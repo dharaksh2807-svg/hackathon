@@ -10,6 +10,7 @@ import { DisputeDetailModal } from "../disputes/DisputeDetailModal";
 import { EmptyState } from "../common/EmptyState";
 import { formatPaise } from "@/lib/api-client/currency";
 import { useToast } from "../common/Toast";
+import { useI18n } from "@/lib/i18n/context";
 
 interface WorkerDashboardProps {
   persona: PortalIdentity;
@@ -19,6 +20,7 @@ interface WorkerDashboardProps {
   onCheckIn: (shiftId: string) => Promise<void>;
   onCheckOut: (shiftId: string, unpaidBreakMinutes: number) => Promise<void>;
   onCreateDispute: (shiftId: string, reason: string) => Promise<void>;
+  initialFilter?: "ALL" | "DISCREPANCIES" | "ACTIVE" | "COMPLETED";
 }
 
 export function WorkerDashboard({
@@ -29,9 +31,11 @@ export function WorkerDashboard({
   onCheckIn,
   onCheckOut,
   onCreateDispute,
+  initialFilter = "ALL",
 }: WorkerDashboardProps) {
   const { showToast } = useToast();
-  const [activeFilter, setActiveFilter] = useState<"ALL" | "DISCREPANCIES" | "ACTIVE" | "COMPLETED">("ALL");
+  const { t } = useI18n();
+  const [activeFilter, setActiveFilter] = useState<"ALL" | "DISCREPANCIES" | "ACTIVE" | "COMPLETED">(initialFilter);
 
   // Modal states
   const [checkoutShift, setCheckoutShift] = useState<Shift | null>(null);
@@ -93,7 +97,6 @@ export function WorkerDashboard({
   });
 
   const underpaidCount = earnings?.underpaidCount ?? 0;
-  const allUnderpaidCount = shifts.filter(shift => shift.comparisonStatus === "UNDERPAID").length;
   const netShortfallPaise = (earnings?.shifts ?? [])
     .filter((s) => s.comparisonStatus === "UNDERPAID" && s.differenceMinor && s.differenceMinor > 0)
     .reduce((acc, s) => acc + (s.differenceMinor ?? 0), 0);
@@ -104,33 +107,33 @@ export function WorkerDashboard({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Expected Earnings */}
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-1">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            <span>Expected Pay (Month)</span>
-            <span className="text-emerald-700 font-bold">Configured</span>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 leading-tight">{t("moneyIShouldGet")}</span>
+            <span className="text-lg">💰</span>
           </div>
           <div className="text-2xl font-black text-slate-900 tracking-tight">
             {earnings ? formatPaise(earnings.totalExpectedMinor) : "₹0.00"}
           </div>
           <div className="text-xs text-slate-500">
-            Based on {earnings?.completedCount ?? 0} completed shifts in {earnings?.month ?? "the selected month"}
+            {earnings?.completedCount ?? 0} {t("completedShifts")}
           </div>
         </div>
 
         {/* Card 2: Recorded Pay */}
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-1">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            <span>Employer Recorded</span>
-            <span className="text-slate-600">Recorded</span>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 leading-tight">{t("moneyMyEmployerEntered")}</span>
+            <span className="text-lg">📋</span>
           </div>
           <div className="text-2xl font-black text-slate-900 tracking-tight">
             {earnings ? formatPaise(earnings.totalRecordedMinor) : "₹0.00"}
           </div>
           <div className="text-xs text-slate-500">
-            {earnings?.recordedCount ?? 0} of {earnings?.completedCount ?? 0} shifts recorded by site supervisor
+            {earnings?.recordedCount ?? 0} / {earnings?.completedCount ?? 0} {t("recordedShiftsCount")}
           </div>
         </div>
 
-        {/* Card 3: Wage Discrepancies Alert */}
+        {/* Card 3: Missing Money Alert */}
         <div
           className={`p-5 rounded-xl border shadow-xs space-y-1 ${
             underpaidCount > 0
@@ -138,31 +141,31 @@ export function WorkerDashboard({
               : "bg-white border-slate-200 text-slate-900"
           }`}
         >
-          <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider">
-            <span>Wage Shortfall</span>
-            {underpaidCount > 0 && <span className="text-amber-800 font-bold">Action Needed</span>}
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold leading-tight">{t("moneyStillMissing")}</span>
+            <span className="text-lg">{underpaidCount > 0 ? "⚠️" : "✅"}</span>
           </div>
           <div className="text-2xl font-black tracking-tight">
             {underpaidCount > 0 ? formatPaise(netShortfallPaise) : "₹0.00"}
           </div>
           <div className="text-xs text-slate-600">
             {underpaidCount > 0
-              ? `${underpaidCount} shift${underpaidCount > 1 ? "s" : ""} underpaid`
-              : "No shortfall among recorded shifts"}
+              ? `${underpaidCount} ${t("missingMoneyShifts")}`
+              : t("allMatchedMessage")}
           </div>
         </div>
 
-        {/* Card 4: Active Disputes Queue */}
+        {/* Card 4: Open Complaints */}
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-1">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            <span>Active Disputes</span>
-            <span className="text-sky-700 font-bold">Audit</span>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 leading-tight">{t("openComplaints")}</span>
+            <span className="text-lg">⚖️</span>
           </div>
           <div className="text-2xl font-black text-slate-900 tracking-tight">
             {disputes.filter((d) => d.status === "OPEN").length}
           </div>
           <div className="text-xs text-slate-500">
-            {disputes.length} total dispute case{disputes.length === 1 ? "" : "s"} tracked
+            {disputes.length} {t("totalComplaints")}
           </div>
         </div>
       </div>
@@ -170,11 +173,9 @@ export function WorkerDashboard({
       {/* Shifts Section Header & Filter Tabs */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">
-            My Shift Ledger & Attendance History
-          </h2>
+          <h2 className="text-lg font-bold text-slate-900">{t("myShifts")}</h2>
           <p className="text-xs text-slate-500">
-            Organization: {persona.organizationName} ({persona.sector === "construction" ? "Civil Construction" : "Campus Facilities"})
+            {t("organization")}: {persona.organizationName}
           </p>
         </div>
 
@@ -184,11 +185,11 @@ export function WorkerDashboard({
             onClick={() => setActiveFilter("ALL")}
             className={`px-3 py-1.5 rounded-md font-medium transition-all ${
               activeFilter === "ALL"
-                ? "bg-white text-slate-900 shadow-xs"
+                ? "bg-white text-slate-900 shadow-xs font-semibold"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            All ({shifts.length})
+            {t("allShifts")} ({shifts.length})
           </button>
           <button
             type="button"
@@ -199,10 +200,10 @@ export function WorkerDashboard({
                 : "text-amber-900 hover:bg-amber-100/50"
             }`}
           >
-            <span>Underpaid</span>
-            {allUnderpaidCount > 0 && (
-              <span className="bg-amber-950/20 px-1.5 py-0.2 rounded-full text-[10px]">
-                {allUnderpaidCount}
+            <span>⚠️ {t("unpaidShifts")}</span>
+            {underpaidCount > 0 && (
+              <span className="bg-amber-950/20 px-1.5 py-0.5 rounded-full text-[10px]">
+                {underpaidCount}
               </span>
             )}
           </button>
@@ -211,22 +212,22 @@ export function WorkerDashboard({
             onClick={() => setActiveFilter("ACTIVE")}
             className={`px-3 py-1.5 rounded-md font-medium transition-all ${
               activeFilter === "ACTIVE"
-                ? "bg-white text-slate-900 shadow-xs"
+                ? "bg-white text-slate-900 shadow-xs font-semibold"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            Active / Planned
+            {t("activeShifts")}
           </button>
           <button
             type="button"
             onClick={() => setActiveFilter("COMPLETED")}
             className={`px-3 py-1.5 rounded-md font-medium transition-all ${
               activeFilter === "COMPLETED"
-                ? "bg-white text-slate-900 shadow-xs"
+                ? "bg-white text-slate-900 shadow-xs font-semibold"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            Completed
+            {t("completedShifts")}
           </button>
         </div>
       </div>
@@ -234,15 +235,15 @@ export function WorkerDashboard({
       {/* Shifts List */}
       {filteredShifts.length === 0 ? (
         <EmptyState
-          title="No shifts found in this view"
+          title={activeFilter === "DISCREPANCIES" ? t("noMissingMoney") : t("noShiftsFound")}
           description={
             activeFilter === "DISCREPANCIES"
-              ? "Great news! No wage discrepancies were found in your completed shifts."
-              : "No shifts match the selected filter criteria."
+              ? t("allMatchedMessage")
+              : t("noShiftsFound")
           }
           action={
             activeFilter !== "ALL"
-              ? { label: "View All Shifts", onClick: () => setActiveFilter("ALL") }
+              ? { label: `${t("allShifts")}`, onClick: () => setActiveFilter("ALL") }
               : undefined
           }
         />

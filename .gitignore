@@ -19,3 +19,8 @@ coverage/
 .vercel/
 *.pem
 *.key
+
+# Local secrets
+.env
+.env.*
+!.env.example

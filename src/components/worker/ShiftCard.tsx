@@ -5,6 +5,7 @@ import type { Shift, Dispute } from "@/lib/api-client/types";
 import { Badge } from "../common/Badge";
 import { formatPaise, formatDiscrepancy } from "@/lib/api-client/currency";
 import { formatDateTimeKolkata, formatTimeOnlyKolkata, formatMinutes } from "@/lib/api-client/formatters";
+import { useI18n } from "@/lib/i18n/context";
 
 interface ShiftCardProps {
   shift: Shift;
@@ -27,6 +28,7 @@ export function ShiftCard({
   onViewDispute,
   isCheckInLoading,
 }: ShiftCardProps) {
+  const { t } = useI18n();
   const discrepancy = formatDiscrepancy(shift.differenceMinor, shift.comparisonStatus);
 
   return (
@@ -69,42 +71,42 @@ export function ShiftCard({
       {/* Middle Grid: Financials & Attendance */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50/70 p-3 rounded-lg border border-slate-100 text-xs">
         <div>
-          <span className="text-slate-500 block">Worked Time</span>
+          <span className="text-slate-500 block">{t("workedTime")}</span>
           <span className="font-semibold text-slate-800 text-sm">
             {shift.earnings ? formatMinutes(shift.earnings.workedMinutes) : "—"}
           </span>
           {shift.unpaidBreakMinutes > 0 && (
-            <span className="text-[11px] text-slate-500 block font-normal">
-              Break: {shift.unpaidBreakMinutes}m
+            <span className="text-[11px] text-slate-400 block font-normal">
+              {t("unpaidBreak")}: {shift.unpaidBreakMinutes}m
             </span>
           )}
         </div>
 
         <div>
-          <span className="text-slate-500 block">Expected Pay</span>
+          <span className="text-slate-500 block">{t("moneyIShouldGet")}</span>
           <span className="font-semibold text-emerald-800 text-sm">
-            {shift.earnings ? formatPaise(shift.earnings.expectedMinor) : "Pending"}
-          </span>
-          <span className="text-[11px] text-slate-500 block font-normal">
-            Configured rule
+            {shift.earnings ? formatPaise(shift.earnings.expectedMinor) : t("loading")}
           </span>
         </div>
 
         <div>
-          <span className="text-slate-500 block">Recorded Pay</span>
+          <span className="text-slate-500 block">{t("moneyMyEmployerEntered")}</span>
           <span className="font-semibold text-slate-900 text-sm">
-            {shift.recordedAmountMinor !== null ? formatPaise(shift.recordedAmountMinor) : "Not recorded"}
-          </span>
-          <span className="text-[11px] text-slate-500 block font-normal">
-            By employer
+            {shift.recordedAmountMinor !== null ? formatPaise(shift.recordedAmountMinor) : t("statusNotRecorded")}
           </span>
         </div>
 
         <div>
-          <span className="text-slate-500 block">Parity Status</span>
+          <span className="text-slate-500 block">{t("moneyStillMissing")}</span>
           <div className="mt-0.5">
             <Badge variant={discrepancy.badgeVariant} size="sm">
-              {shift.comparisonStatus}
+              {shift.comparisonStatus === "MATCHED"
+                ? t("statusMatchedPay")
+                : shift.comparisonStatus === "UNDERPAID"
+                ? t("statusUnderpaid")
+                : shift.comparisonStatus === "OVERPAID"
+                ? t("statusOverpaid")
+                : t("statusNotRecorded")}
             </Badge>
           </div>
         </div>
@@ -116,7 +118,7 @@ export function ShiftCard({
           <div className="flex items-center gap-2">
             <span className="text-sm">⚠️</span>
             <span className="font-semibold">{discrepancy.formattedAmount}</span>
-            <span className="text-slate-600 hidden sm:inline">— {discrepancy.description}</span>
+            <span className="text-slate-600 hidden sm:inline">— {t("moneyStillMissing")}</span>
           </div>
         </div>
       )}
@@ -126,14 +128,18 @@ export function ShiftCard({
         <div className="flex items-center justify-between p-2.5 bg-sky-50 border border-sky-200 rounded-lg text-xs text-sky-950">
           <div className="flex items-center gap-2">
             <span>⚖️</span>
-            <span className="font-semibold">Dispute #{dispute.id.slice(0, 8)}…</span>
+            <span className="font-semibold">{t("complaintStatus")}</span>
             <Badge
               variant={
                 dispute.status === "OPEN" ? "open" : dispute.status === "APPROVED" ? "approved" : "rejected"
               }
               size="sm"
             >
-              {dispute.status}
+              {dispute.status === "OPEN"
+                ? t("complaintOpen")
+                : dispute.status === "APPROVED"
+                ? t("complaintApproved")
+                : t("complaintRejected")}
             </Badge>
           </div>
           <button
@@ -141,14 +147,14 @@ export function ShiftCard({
             onClick={() => onViewDispute(dispute)}
             className="text-xs font-semibold text-blue-700 hover:text-blue-900 underline"
           >
-            Review Case
+            {t("complaintViewDetail")}
           </button>
         </div>
       )}
 
       {/* Action Footer */}
       <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 flex-wrap">
-        <div className="text-[11px] text-slate-500 font-mono">
+        <div className="text-[11px] text-slate-400 font-mono">
           ID: {shift.id.slice(0, 8)}…
         </div>
 
@@ -158,9 +164,9 @@ export function ShiftCard({
               type="button"
               onClick={() => onCheckIn(shift.id)}
               disabled={isCheckInLoading}
-              className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+              className="px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-1.5 min-h-[44px]"
             >
-              <span>Check In Now</span>
+              <span>✅ {t("checkIn")}</span>
             </button>
           )}
 
@@ -168,9 +174,9 @@ export function ShiftCard({
             <button
               type="button"
               onClick={() => onCheckOut(shift)}
-              className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-1.5"
+              className="px-4 py-2.5 text-sm font-semibold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors flex items-center gap-1.5 min-h-[44px]"
             >
-              <span>Record Check Out</span>
+              <span>🏁 {t("checkOut")}</span>
             </button>
           )}
 
@@ -179,18 +185,18 @@ export function ShiftCard({
               <button
                 type="button"
                 onClick={() => onViewBreakdown(shift)}
-                className="px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+                className="px-3 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors min-h-[44px]"
               >
-                View Pay Math
+                {t("viewPayDetails")}
               </button>
 
               {(!dispute || dispute.status !== "OPEN") && (
                 <button
                   type="button"
                   onClick={() => onRaiseDispute(shift)}
-                  className="px-3 py-1.5 text-xs font-semibold text-amber-900 bg-amber-50 border border-amber-300 rounded-lg hover:bg-amber-100 transition-colors"
+                  className="px-3 py-2 text-xs font-semibold text-amber-900 bg-amber-50 border border-amber-300 rounded-xl hover:bg-amber-100 transition-colors min-h-[44px]"
                 >
-                  Raise Dispute
+                  ⚠️ {t("reportMissingMoney")}
                 </button>
               )}
             </>
