@@ -56,6 +56,8 @@ export async function bodyInput(request: Request): Promise<unknown> {
   } catch (error) {
     if (error instanceof ApiError) throw error;
     throw new ApiError("VALIDATION_ERROR", 400, "Invalid JSON body");
+  } finally {
+    reader.releaseLock();
   }
 }
 

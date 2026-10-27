@@ -28,6 +28,38 @@ test("JSON writes enforce exact Origin/Host, content type, stream size and valid
   await assert.rejects(() => bodyInput(write(JSON.stringify({ reason: "x".repeat(17_000) }))));
 });
 
+test("body parsing releases its stream reader after success and validation failures", async t => {
+  for (const [name, body, message] of [
+    ["valid JSON", "{}", null],
+    ["malformed JSON", "{", "Invalid JSON body"],
+    ["oversized JSON", JSON.stringify({ reason: "x".repeat(17_000) }), "Request body too large"],
+  ] as const) {
+    await t.test(name, async () => {
+      const request = write(body);
+      if (message === null) {
+        assert.deepEqual(await bodyInput(request), {});
+      } else {
+        await assert.rejects(() => bodyInput(request), (error: unknown) =>
+          error instanceof ApiError && error.code === "VALIDATION_ERROR" && error.status === 400 && error.message === message);
+      }
+      assert.equal(request.body?.locked, false);
+    });
+  }
+});
+
+test("body parsing releases a failed stream and sanitizes its error", async () => {
+  const init: RequestInit & { duplex: "half" } = {
+    body: new ReadableStream<Uint8Array>({
+      start(controller) { controller.error(new Error("Internal transport failure")); },
+    }),
+    duplex: "half",
+  };
+  const request = new Request(write("{}"), init);
+  await assert.rejects(() => bodyInput(request), (error: unknown) =>
+    error instanceof ApiError && error.code === "VALIDATION_ERROR" && error.status === 400 && error.message === "Invalid JSON body");
+  assert.equal(request.body?.locked, false);
+});
+
 test("resolution decisions enforce approved correction and prohibit rejected correction", () => {
   const explanation = "Reviewed synthetic attendance.";
   assert.throws(() => input(ResolveDisputeRequestSchema, { decision: "APPROVED", explanation }));
