@@ -1,6 +1,6 @@
 /** Next.js 16 proxy: refresh authenticated Supabase cookies on request. */
 import { NextResponse, type NextRequest } from "next/server";
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
 export async function proxy(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -9,16 +9,19 @@ export async function proxy(request: NextRequest) {
   if (!url || !key) return NextResponse.next({ request });
   let response = NextResponse.next({ request });
   const supabase = createServerClient(url, key, {
+    cookieOptions: { sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/" },
     cookies: {
       getAll() { return request.cookies.getAll(); },
-      setAll(changes) {
+      setAll(changes: { name: string; value: string; options: CookieOptions }[]) {
         changes.forEach(({ name, value }) => request.cookies.set(name, value));
         response = NextResponse.next({ request });
         changes.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
       },
     },
   });
-  await supabase.auth.getClaims();
+  // Do not run remote Auth verification for APIs here: handlers call getUser()
+  // and normalize authentication failures into the frozen JSON error envelope.
+  if (!request.nextUrl.pathname.startsWith("/api/")) await supabase.auth.getUser();
   return response;
 }
 

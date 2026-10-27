@@ -1,19 +1,18 @@
 "use client";
 
 import React, { useState } from "react";
-import type { Shift, Dispute, EarningsResponse, DemoPersona } from "@/lib/api-client/types";
+import type { Shift, Dispute, EarningsResponse, PortalIdentity } from "@/lib/api-client/types";
 import { ShiftCard } from "./ShiftCard";
 import { CheckOutModal } from "./CheckOutModal";
 import { EarningsBreakdownModal } from "./EarningsBreakdownModal";
 import { RaiseDisputeModal } from "../disputes/RaiseDisputeModal";
 import { DisputeDetailModal } from "../disputes/DisputeDetailModal";
-import { Badge } from "../common/Badge";
 import { EmptyState } from "../common/EmptyState";
 import { formatPaise } from "@/lib/api-client/currency";
 import { useToast } from "../common/Toast";
 
 interface WorkerDashboardProps {
-  persona: DemoPersona;
+  persona: PortalIdentity;
   shifts: Shift[];
   disputes: Dispute[];
   earnings: EarningsResponse["data"] | null;
@@ -93,8 +92,9 @@ export function WorkerDashboard({
     return true;
   });
 
-  const underpaidCount = shifts.filter((s) => s.comparisonStatus === "UNDERPAID").length;
-  const netShortfallPaise = shifts
+  const underpaidCount = earnings?.underpaidCount ?? 0;
+  const allUnderpaidCount = shifts.filter(shift => shift.comparisonStatus === "UNDERPAID").length;
+  const netShortfallPaise = (earnings?.shifts ?? [])
     .filter((s) => s.comparisonStatus === "UNDERPAID" && s.differenceMinor && s.differenceMinor > 0)
     .reduce((acc, s) => acc + (s.differenceMinor ?? 0), 0);
 
@@ -112,7 +112,7 @@ export function WorkerDashboard({
             {earnings ? formatPaise(earnings.totalExpectedMinor) : "₹0.00"}
           </div>
           <div className="text-xs text-slate-500">
-            Based on {earnings?.completedCount ?? 0} completed shifts in October 2026
+            Based on {earnings?.completedCount ?? 0} completed shifts in {earnings?.month ?? "the selected month"}
           </div>
         </div>
 
@@ -120,7 +120,7 @@ export function WorkerDashboard({
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider">
             <span>Employer Recorded</span>
-            <span className="text-slate-600">Disbursed</span>
+            <span className="text-slate-600">Recorded</span>
           </div>
           <div className="text-2xl font-black text-slate-900 tracking-tight">
             {earnings ? formatPaise(earnings.totalRecordedMinor) : "₹0.00"}
@@ -148,7 +148,7 @@ export function WorkerDashboard({
           <div className="text-xs text-slate-600">
             {underpaidCount > 0
               ? `${underpaidCount} shift${underpaidCount > 1 ? "s" : ""} underpaid`
-              : "All completed shifts fully matched"}
+              : "No shortfall among recorded shifts"}
           </div>
         </div>
 
@@ -200,9 +200,9 @@ export function WorkerDashboard({
             }`}
           >
             <span>Underpaid</span>
-            {underpaidCount > 0 && (
+            {allUnderpaidCount > 0 && (
               <span className="bg-amber-950/20 px-1.5 py-0.2 rounded-full text-[10px]">
-                {underpaidCount}
+                {allUnderpaidCount}
               </span>
             )}
           </button>
@@ -269,6 +269,7 @@ export function WorkerDashboard({
 
       {/* Modals */}
       <CheckOutModal
+        key={checkoutShift?.id ?? "closed"}
         shift={checkoutShift}
         isOpen={Boolean(checkoutShift)}
         onClose={() => setCheckoutShift(null)}
@@ -276,7 +277,7 @@ export function WorkerDashboard({
       />
 
       <EarningsBreakdownModal
-        shift={breakdownShift}
+        shift={shifts.find(shift => shift.id === breakdownShift?.id) ?? null}
         dispute={breakdownShift ? disputes.find((d) => d.shiftId === breakdownShift.id) : null}
         isOpen={Boolean(breakdownShift)}
         onClose={() => setBreakdownShift(null)}
@@ -285,6 +286,7 @@ export function WorkerDashboard({
       />
 
       <RaiseDisputeModal
+        key={disputeShift?.id ?? "closed"}
         shift={disputeShift}
         isOpen={Boolean(disputeShift)}
         onClose={() => setDisputeShift(null)}
@@ -292,7 +294,7 @@ export function WorkerDashboard({
       />
 
       <DisputeDetailModal
-        dispute={inspectDispute}
+        dispute={disputes.find(dispute => dispute.id === inspectDispute?.id) ?? null}
         shift={inspectDispute ? shifts.find((s) => s.id === inspectDispute.shiftId) : null}
         isOpen={Boolean(inspectDispute)}
         onClose={() => setInspectDispute(null)}

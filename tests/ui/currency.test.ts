@@ -59,3 +59,13 @@ test("formatDiscrepancy accurately identifies underpaid, matched, and pending sh
   assert.equal(overpaid.badgeLabel, "Overpaid by ₹50.00");
   assert.equal(overpaid.paise, -5000);
 });
+
+
+test("pay entry converts decimals exactly and rejects partial, overprecise or overflowing amounts", () => {
+  assert.equal(rupeesToPaise("1.15"), 115);
+  assert.equal(rupeesToPaise("0.29"), 29);
+  assert.equal(rupeesToPaise("21474836.47"), 2147483647);
+  for (const value of ["1.50junk", "1.005", "21474836.48", "1e3", ""]) {
+    assert.throws(() => rupeesToPaise(value), RangeError);
+  }
+});

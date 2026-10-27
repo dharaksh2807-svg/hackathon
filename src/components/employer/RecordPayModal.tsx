@@ -13,22 +13,9 @@ interface RecordPayModalProps {
 }
 
 export function RecordPayModal({ shift, isOpen, onClose, onSubmit }: RecordPayModalProps) {
-  const [rupeesInput, setRupeesInput] = useState("");
+  const [rupeesInput, setRupeesInput] = useState(() => shift?.recordedAmountMinor != null ? paiseToRupees(shift.recordedAmountMinor) : shift?.earnings ? paiseToRupees(shift.earnings.expectedMinor) : "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Initialize input when shift opens
-  React.useEffect(() => {
-    if (shift) {
-      if (shift.recordedAmountMinor !== null) {
-        setRupeesInput(paiseToRupees(shift.recordedAmountMinor));
-      } else if (shift.earnings) {
-        setRupeesInput(paiseToRupees(shift.earnings.expectedMinor));
-      } else {
-        setRupeesInput("");
-      }
-    }
-  }, [shift]);
 
   if (!shift) return null;
 

@@ -22,6 +22,7 @@ import type {
   CreateDisputeRequest,
   ResolveDisputeRequest,
   SetRecordedPayRequest,
+  CheckoutRequest,
 } from "../contracts.ts";
 
 export type {
@@ -117,7 +118,7 @@ export const SECTOR_DEFINITIONS: Record<Sector, SectorDefinition> = {
   },
 };
 
-export interface DemoPersona {
+export interface PortalIdentity {
   id: string;
   email: string;
   name: string;
@@ -130,7 +131,7 @@ export interface DemoPersona {
   description: string;
 }
 
-export const DEMO_PERSONAS: DemoPersona[] = [
+export const DEMO_PERSONAS: PortalIdentity[] = [
   {
     id: "demo-worker-construction",
     email: "fairshift-construction-worker@example.test",

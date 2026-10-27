@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { SECTOR_DEFINITIONS } from "@/lib/api-client/types";
 
 export function IntroSection() {
   const [isExpanded, setIsExpanded] = useState(true);

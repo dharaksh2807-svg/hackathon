@@ -23,20 +23,11 @@ export function ResolveDisputeModal({
 }: ResolveDisputeModalProps) {
   const [decision, setDecision] = useState<"APPROVED" | "REJECTED">("APPROVED");
   const [explanation, setExplanation] = useState("");
-  const [rupeesInput, setRupeesInput] = useState("");
+  const [rupeesInput, setRupeesInput] = useState(() => shift?.earnings ? paiseToRupees(shift.earnings.expectedMinor) : shift?.recordedAmountMinor != null ? paiseToRupees(shift.recordedAmountMinor) : "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Set default suggested corrected amount to expected pay
-  React.useEffect(() => {
-    if (shift && shift.earnings) {
-      setRupeesInput(paiseToRupees(shift.earnings.expectedMinor));
-    } else if (shift && shift.recordedAmountMinor !== null) {
-      setRupeesInput(paiseToRupees(shift.recordedAmountMinor));
-    }
-  }, [shift]);
-
-  if (!dispute || !shift) return null;
+  if (!dispute) return null;
 
   const charCount = explanation.trim().length;
   const isExplanationValid = charCount >= 10 && charCount <= 2000;
@@ -89,24 +80,26 @@ export function ResolveDisputeModal({
       isOpen={isOpen}
       onClose={onClose}
       title="Adjudicate Wage Dispute"
-      description={`Case #${dispute.id.slice(0, 8)}… — ${shift.siteLabel}`}
+      description={`Case #${dispute.id.slice(0, 8)}… — ${shift?.siteLabel ?? dispute.shiftId}`}
       maxWidth="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Worker's claim box */}
         <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-1.5">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="font-semibold uppercase tracking-wider text-slate-700">Worker's Claim</span>
+            <span className="font-semibold uppercase tracking-wider text-slate-700">Worker&apos;s Claim</span>
             <span>{formatDateTimeKolkata(dispute.createdAt)}</span>
           </div>
           <div className="font-medium text-slate-900 text-xs sm:text-sm bg-white p-2.5 rounded border border-slate-200">
             &ldquo;{dispute.reason}&rdquo;
           </div>
           <div className="flex items-center justify-between pt-1 text-slate-600">
-            <span>Statutory Expected: {shift.earnings ? formatPaise(shift.earnings.expectedMinor) : "—"}</span>
-            <span>Recorded Pay: {shift.recordedAmountMinor !== null ? formatPaise(shift.recordedAmountMinor) : "None"}</span>
+            <span>Statutory Expected: {shift?.earnings ? formatPaise(shift.earnings.expectedMinor) : "—"}</span>
+            <span>Recorded Pay: {shift && shift.recordedAmountMinor !== null ? formatPaise(shift.recordedAmountMinor) : "Unavailable"}</span>
           </div>
         </div>
+
+        {!shift && <p className="text-xs text-slate-600">Shift earnings are unavailable here. Enter the corrected amount to approve. Resolution requires existing recorded pay.</p>}
 
         {/* Decision Radio Choice */}
         <div>
@@ -241,7 +234,7 @@ export function ResolveDisputeModal({
             {isSubmitting
               ? "Recording Adjudication..."
               : decision === "APPROVED"
-              ? "Confirm & Disburse Adjustment"
+              ? "Confirm & Save Adjustment"
               : "Confirm Rejection"}
           </button>
         </div>

@@ -132,4 +132,3 @@ export type DisputesQuery = z.infer<typeof DisputesQuerySchema>;
 export type DashboardQuery = z.infer<typeof DashboardQuerySchema>;
 export type EmptyBody = z.infer<typeof EmptyBodySchema>;
 export type EarningsBreakdown = z.infer<typeof EarningsBreakdownSchema>;
-export type RecordedPayResponse = z.infer<typeof RecordedPayResponseSchema>;

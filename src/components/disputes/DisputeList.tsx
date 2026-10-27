@@ -1,16 +1,15 @@
 "use client";
 
 import React, { useState } from "react";
-import type { Dispute, Shift, DemoPersona, ResolveDisputeRequest } from "@/lib/api-client/types";
+import type { Dispute, Shift, PortalIdentity, ResolveDisputeRequest } from "@/lib/api-client/types";
 import { Badge } from "../common/Badge";
 import { EmptyState } from "../common/EmptyState";
 import { DisputeDetailModal } from "./DisputeDetailModal";
 import { ResolveDisputeModal } from "../employer/ResolveDisputeModal";
 import { formatDateTimeKolkata } from "@/lib/api-client/formatters";
-import { formatPaise } from "@/lib/api-client/currency";
 
 interface DisputeListProps {
-  persona: DemoPersona;
+  persona: PortalIdentity;
   disputes: Dispute[];
   shifts: Shift[];
   onResolveDispute?: (disputeId: string, req: ResolveDisputeRequest) => Promise<void>;
@@ -189,7 +188,7 @@ export function DisputeList({
 
       {/* Modals */}
       <DisputeDetailModal
-        dispute={selectedDispute}
+        dispute={disputes.find(dispute => dispute.id === selectedDispute?.id) ?? null}
         shift={selectedDispute ? shifts.find((s) => s.id === selectedDispute.shiftId) : null}
         isOpen={Boolean(selectedDispute)}
         onClose={() => setSelectedDispute(null)}
@@ -202,6 +201,7 @@ export function DisputeList({
 
       {onResolveDispute && (
         <ResolveDisputeModal
+        key={resolveDispute?.id ?? "closed"}
           dispute={resolveDispute}
           shift={resolveDispute ? shifts.find((s) => s.id === resolveDispute.shiftId) ?? null : null}
           isOpen={Boolean(resolveDispute)}

@@ -33,7 +33,7 @@ export function EarningsBreakdownModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Statutory Shift Earnings Breakdown"
+      title="Shift Earnings Breakdown"
       description={`Audit record for ${shift.siteLabel} (${shift.sector === "construction" ? "Civil Works" : "Campus Facilities"})`}
       maxWidth="lg"
       footer={
@@ -49,7 +49,7 @@ export function EarningsBreakdownModal({
             >
               Close
             </button>
-            {dispute ? (
+            {dispute?.status === "OPEN" ? (
               <button
                 type="button"
                 onClick={() => {
@@ -130,7 +130,7 @@ export function EarningsBreakdownModal({
               <tr>
                 <th className="py-2.5 px-3">Pay Component</th>
                 <th className="py-2.5 px-3 text-right">Calculation Basis</th>
-                <th className="py-2.5 px-3 text-right">Statutory Expected</th>
+                <th className="py-2.5 px-3 text-right">Expected Pay</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-800">
@@ -138,13 +138,11 @@ export function EarningsBreakdownModal({
                 <td className="py-2.5 px-3">
                   <div className="font-medium">Regular Shift Pay</div>
                   <div className="text-xs text-slate-500">
-                    {shift.sector === "construction" ? "Standard base hours (up to 8h)" : "Flat statutory shift rate"}
+                    Base pay from the stored shift rule
                   </div>
                 </td>
                 <td className="py-2.5 px-3 text-right text-slate-600 font-mono text-xs">
-                  {shift.sector === "construction"
-                    ? `${formatMinutes(Math.min(earnings.workedMinutes, 480))} @ ₹120/h`
-                    : "Flat stipend"}
+                  {formatMinutes(earnings.workedMinutes)} paid time
                 </td>
                 <td className="py-2.5 px-3 text-right font-medium text-slate-900">
                   {formatPaise(earnings.regularMinor)}
@@ -153,17 +151,13 @@ export function EarningsBreakdownModal({
 
               <tr>
                 <td className="py-2.5 px-3">
-                  <div className="font-medium">Overtime Pay (1.5× Rate)</div>
+                  <div className="font-medium">Overtime Pay</div>
                   <div className="text-xs text-slate-500">
-                    {shift.sector === "construction"
-                      ? "Mandatory 150% multiplier beyond 480 minutes"
-                      : "Not applicable for flat-rate contracts"}
+                    Overtime calculated by the server from the stored shift rule
                   </div>
                 </td>
                 <td className="py-2.5 px-3 text-right text-slate-600 font-mono text-xs">
-                  {shift.sector === "construction" && earnings.workedMinutes > 480
-                    ? `${formatMinutes(earnings.workedMinutes - 480)} @ ₹180/h`
-                    : "—"}
+                  Stored shift rule
                 </td>
                 <td className="py-2.5 px-3 text-right font-medium text-slate-900">
                   {formatPaise(earnings.overtimeMinor)}
@@ -172,11 +166,11 @@ export function EarningsBreakdownModal({
 
               <tr>
                 <td className="py-2.5 px-3">
-                  <div className="font-medium">Fixed Hazard / Site Allowance</div>
-                  <div className="text-xs text-slate-500">Mandatory per-shift civil works safety stipend</div>
+                  <div className="font-medium">Fixed Shift Allowance</div>
+                  <div className="text-xs text-slate-500">Allowance from the stored shift rule</div>
                 </td>
                 <td className="py-2.5 px-3 text-right text-slate-600 font-mono text-xs">
-                  {shift.sector === "construction" ? "₹50.00 / shift" : "—"}
+                  Per-shift allowance
                 </td>
                 <td className="py-2.5 px-3 text-right font-medium text-slate-900">
                   {formatPaise(earnings.fixedAllowanceMinor)}
@@ -186,7 +180,7 @@ export function EarningsBreakdownModal({
               <tr>
                 <td className="py-2.5 px-3">
                   <div className="font-medium">Weekend Duty Differential</div>
-                  <div className="text-xs text-slate-500">Statutory premium for Saturday and Sunday roster</div>
+                  <div className="text-xs text-slate-500">Weekend allowance from the stored shift rule</div>
                 </td>
                 <td className="py-2.5 px-3 text-right text-slate-600 font-mono text-xs">
                   {shift.sector === "campus" && earnings.weekendBonusMinor > 0 ? "Saturday / Sunday rate" : "—"}

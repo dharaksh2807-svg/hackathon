@@ -1,15 +1,14 @@
 "use client";
 
 import React from "react";
-import type { DemoPersona } from "@/lib/api-client/types";
-import { Badge } from "./common/Badge";
+import type { PortalIdentity } from "@/lib/api-client/types";
 
 export type NavView = "DASHBOARD" | "DISPUTES" | "SECTORS" | "CONTRACT";
 
 interface NavbarProps {
   currentView: NavView;
   onSelectView: (view: NavView) => void;
-  persona: DemoPersona;
+  persona: PortalIdentity;
   disputeCount?: number;
 }
 

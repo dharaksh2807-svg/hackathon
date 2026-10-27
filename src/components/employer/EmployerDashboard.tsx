@@ -5,7 +5,7 @@ import type {
   Shift,
   Dispute,
   DashboardResponse,
-  DemoPersona,
+  PortalIdentity,
   ResolveDisputeRequest,
 } from "@/lib/api-client/types";
 import { Badge } from "../common/Badge";
@@ -18,7 +18,7 @@ import { formatDateTimeKolkata, formatMinutes } from "@/lib/api-client/formatter
 import { useToast } from "../common/Toast";
 
 interface EmployerDashboardProps {
-  persona: DemoPersona;
+  persona: PortalIdentity;
   shifts: Shift[];
   disputes: Dispute[];
   dashboardData: DashboardResponse["data"] | null;
@@ -68,7 +68,7 @@ export function EmployerDashboard({
   const openDisputes = disputes.filter((d) => d.status === "OPEN");
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" aria-label={`${persona.organizationName} employer dashboard`}>
       {/* High-Level Overview Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Metric 1: Expected Shift Obligations */}
@@ -146,6 +146,8 @@ export function EmployerDashboard({
         </div>
       </div>
 
+      <p className="text-xs text-slate-500">Shift tables show up to 20 recent shifts for the selected month. Totals above cover the full month; disputes cover all dates.</p>
+
       {/* Tabs navigation */}
       <div className="border-b border-slate-200">
         <div className="flex items-center gap-2 overflow-x-auto text-xs sm:text-sm font-semibold">
@@ -192,7 +194,7 @@ export function EmployerDashboard({
                 : "border-transparent text-slate-600 hover:text-slate-900"
             }`}
           >
-            <span>Complete Shift Roster ({shifts.length})</span>
+            <span>Recent Shift Roster ({shifts.length}, up to 20)</span>
           </button>
         </div>
       </div>
@@ -344,7 +346,7 @@ export function EmployerDashboard({
                     {/* Dispute Body */}
                     <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs sm:text-sm text-slate-800">
                       <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
-                        Worker's Reason:
+                        Worker&apos;s Reason:
                       </span>
                       &ldquo;{dispute.reason}&rdquo;
                     </div>
@@ -364,7 +366,7 @@ export function EmployerDashboard({
         </div>
       )}
 
-      {/* TAB 3: All Organization Shifts */}
+      {/* TAB 3: Recent Organization Shifts (up to 20) */}
       {activeTab === "ALL_SHIFTS" && (
         <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-xs">
           <div className="overflow-x-auto">
@@ -441,6 +443,7 @@ export function EmployerDashboard({
 
       {/* Modals */}
       <RecordPayModal
+        key={payModalShift?.id ?? "closed"}
         shift={payModalShift}
         isOpen={Boolean(payModalShift)}
         onClose={() => setPayModalShift(null)}
@@ -448,6 +451,7 @@ export function EmployerDashboard({
       />
 
       <ResolveDisputeModal
+        key={resolveModalDispute?.id ?? "closed"}
         dispute={resolveModalDispute}
         shift={resolveModalDispute ? shifts.find((s) => s.id === resolveModalDispute.shiftId) ?? null : null}
         isOpen={Boolean(resolveModalDispute)}
@@ -456,7 +460,7 @@ export function EmployerDashboard({
       />
 
       <DisputeDetailModal
-        dispute={inspectDispute}
+        dispute={disputes.find(dispute => dispute.id === inspectDispute?.id) ?? null}
         shift={inspectDispute ? shifts.find((s) => s.id === inspectDispute.shiftId) : null}
         isOpen={Boolean(inspectDispute)}
         onClose={() => setInspectDispute(null)}

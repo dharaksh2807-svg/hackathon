@@ -1,4 +1,4 @@
--- Development synthetic fixtures only. Apply AFTER the initial migration.
+-- Development synthetic fixtures only. Apply AFTER all migrations in filename order.
 -- To create memberships / shifts, first provision four synthetic Auth users with
 -- EXACT email addresses below using Supabase Auth Admin tooling (no real identities).
 -- Do not commit passwords or keys; do not run in production.
@@ -49,6 +49,19 @@ BEGIN
     '30000000-0000-4000-8000-000000000003', 'Library — Housekeeping', 'COMPLETED',
     '2026-10-24T03:30:00Z', '2026-10-24T11:30:00Z', '2026-10-24T03:30:00Z', '2026-10-24T11:30:00Z',
     0, true, 1, 'PER_SHIFT', 65000, 0, 10000, 0, 5000)
+  ON CONFLICT (id) DO NOTHING;
+
+  -- Ready-to-check-in shifts for the actual attendance workflow. On re-run, do not
+  -- reset attendance, recorded pay, disputes, or any other existing demo work.
+  INSERT INTO public.shifts(id, organization_id, worker_membership_id, site_label,
+    scheduled_start_at, scheduled_end_at, rule_version, pay_basis, rate_minor,
+    overtime_after_minutes, overtime_multiplier_bps, fixed_allowance_minor, weekend_bonus_minor) VALUES
+  ('40000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000001',
+    '30000000-0000-4000-8000-000000000001', 'Site B — Synthetic attendance',
+    '2026-10-27T02:30:00Z', '2026-10-27T11:30:00Z', 1, 'HOURLY', 12000, 480, 15000, 5000, 0),
+  ('40000000-0000-4000-8000-000000000004', '10000000-0000-4000-8000-000000000002',
+    '30000000-0000-4000-8000-000000000003', 'Campus — Synthetic attendance',
+    '2026-10-27T03:30:00Z', '2026-10-27T11:30:00Z', 1, 'PER_SHIFT', 65000, 0, 10000, 0, 5000)
   ON CONFLICT (id) DO NOTHING;
 
   INSERT INTO public.recorded_pay(id, organization_id, shift_id, amount_minor, entered_by_membership_id) VALUES

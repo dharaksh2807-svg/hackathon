@@ -184,7 +184,7 @@ export function ShiftCard({
                 View Pay Math
               </button>
 
-              {!dispute && (
+              {(!dispute || dispute.status !== "OPEN") && (
                 <button
                   type="button"
                   onClick={() => onRaiseDispute(shift)}
