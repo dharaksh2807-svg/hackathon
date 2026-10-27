@@ -1,7 +1,7 @@
 /** Explicit synthetic adapter for fixture tests only. Never selected by the application. */
 import type { FairShiftApiClient } from "./client.ts";
 import { ApiError } from "./client.ts";
-import type { Shift, Dispute, MeResponse, ShiftsResponse, ShiftResponse, EarningsResponse, DisputesResponse, DisputeResponse, DashboardResponse, RecordedPayResponse, ResolveDisputeResponse, CreateDisputeRequest, ResolveDisputeRequest, Sector } from "./types.ts";
+import type { Shift, Dispute, MeResponse, ShiftsResponse, ShiftResponse, EarningsResponse, DisputesResponse, DisputeResponse, DashboardResponse, RecordedPayResponse, ResolveDisputeResponse, CreateDisputeRequest, ResolveDisputeRequest, Sector, AddWorkerRequest, OrgWorker, AddWorkerResponse, OrgWorkersResponse } from "./types.ts";
 import {
   FIXTURE_ORGS,
   FIXTURE_MEMBERSHIPS,
@@ -271,6 +271,85 @@ export class DemoApiClient implements FairShiftApiClient {
           amountMinor: finalAmount,
           enteredAt: nowIso,
         },
+      },
+    };
+  }
+
+  private orgWorkers = new Map<string, OrgWorker[]>([
+    [
+      FIXTURE_ORGS.construction.id,
+      [
+        {
+          membershipId: "30000000-0000-4000-8000-000000000001",
+          authUserId: "20000000-0000-4000-8000-000000000001",
+          organizationId: FIXTURE_ORGS.construction.id,
+          role: "WORKER",
+          displayName: "Ramesh Kumar (Mason)",
+          workerEmail: "fairshift-construction-worker@example.test",
+          joinedAt: "2026-09-01T08:00:00.000Z",
+        },
+        {
+          membershipId: "30000000-0000-4000-8000-000000000003",
+          authUserId: "20000000-0000-4000-8000-000000000003",
+          organizationId: FIXTURE_ORGS.construction.id,
+          role: "WORKER",
+          displayName: "Suresh Patel (Helper)",
+          workerEmail: "suresh.patel@example.test",
+          joinedAt: "2026-09-15T08:00:00.000Z",
+        },
+      ],
+    ],
+    [
+      FIXTURE_ORGS.campus.id,
+      [
+        {
+          membershipId: "30000000-0000-4000-8000-000000000004",
+          authUserId: "20000000-0000-4000-8000-000000000004",
+          organizationId: FIXTURE_ORGS.campus.id,
+          role: "WORKER",
+          displayName: "Priya Sharma (Dining)",
+          workerEmail: "fairshift-campus-worker@example.test",
+          joinedAt: "2026-09-01T08:00:00.000Z",
+        },
+      ],
+    ],
+  ]);
+
+  async listOrgWorkers(params: { orgId: string }): Promise<OrgWorkersResponse> {
+    const workers = this.orgWorkers.get(params.orgId) ?? [];
+    return { data: [...workers] };
+  }
+
+  async addWorker(req: AddWorkerRequest): Promise<AddWorkerResponse> {
+    const workers = this.orgWorkers.get(req.orgId) ?? [];
+    if (workers.some((w) => w.workerEmail?.toLowerCase() === req.workerEmail.toLowerCase())) {
+      throw new ApiError("CONFLICT", "This worker is already a member of your organization", 409);
+    }
+
+    const ts = Date.now();
+    const newMembershipId = `99${String(ts).slice(-10)}-0000-4000-8000-${String(ts).padStart(12, "0").slice(-12)}`;
+    const newAuthUserId = `88${String(ts).slice(-10)}-0000-4000-8000-${String(ts).padStart(12, "0").slice(-12)}`;
+    const joinedAt = new Date().toISOString().replace(/\.\d{3}Z$/, ".000Z");
+
+    const newWorker: OrgWorker = {
+      membershipId: newMembershipId,
+      authUserId: newAuthUserId,
+      organizationId: req.orgId,
+      role: "WORKER",
+      displayName: req.workerName,
+      workerEmail: req.workerEmail,
+      joinedAt,
+    };
+
+    this.orgWorkers.set(req.orgId, [...workers, newWorker]);
+
+    return {
+      data: {
+        membershipId: newMembershipId,
+        authUserId: newAuthUserId,
+        displayName: req.workerName,
+        workerEmail: req.workerEmail,
+        isNewUser: true,
       },
     };
   }

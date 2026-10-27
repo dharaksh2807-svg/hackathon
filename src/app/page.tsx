@@ -16,7 +16,7 @@ import { DisputeList } from "@/components/disputes/DisputeList";
 import { SectorComparisonView } from "@/components/SectorComparisonView";
 import { ContractStatusView } from "@/components/ContractStatusView";
 import { LoadingSkeleton } from "@/components/common/LoadingSkeleton";
-import type { MeResponse, ResolveDisputeRequest } from "@/lib/api-client/types";
+import type { MeResponse, ResolveDisputeRequest, OrgWorker } from "@/lib/api-client/types";
 import { ApiError, HttpApiClient } from "@/lib/api-client/client";
 import { currentKolkataMonth, loadPortalData, portalIdentities, type PortalData } from "@/lib/api-client/portal";
 import { getBrowserAuth } from "@/lib/browser-auth";
@@ -35,6 +35,7 @@ function FairShiftApp() {
   const [month, setMonth] = useState(() => currentKolkataMonth());
   const [loaded, setLoaded] = useState<{ key: string; data: PortalData } | null>(null);
   const [apiError, setApiError] = useState<{ key: string; message: string } | null>(null);
+  const [workers, setWorkers] = useState<OrgWorker[]>([]);
 
   const requestVersion = useRef(0);
   const sessionVersion = useRef(0);
@@ -85,6 +86,11 @@ function FairShiftApp() {
   const loadData = useCallback(async () => {
     if (!currentPersona) return;
     const version = ++requestVersion.current;
+    if (currentPersona.role !== "WORKER") {
+      void client.listOrgWorkers({ orgId: currentPersona.organizationId }).then(res => {
+        if (version === requestVersion.current) setWorkers(res.data);
+      }).catch(() => {});
+    }
     return loadPortalData(client, currentPersona, month).then(data => {
       if (version === requestVersion.current) { setApiError(null); setLoaded({ key: scopeKey, data }); }
     }, error => {
@@ -165,6 +171,14 @@ function FairShiftApp() {
   const error = apiError?.key === scopeKey ? apiError.message : null;
   const openDisputeCount = data?.disputes.filter(dispute => dispute.status === "OPEN").length ?? 0;
   const handleResolveDispute = (id: string, request: ResolveDisputeRequest) => mutate(() => client.resolveDispute(id, request));
+  const handleAddWorker = (name: string, email: string) => {
+    if (!currentPersona) return Promise.reject(new Error("No organization selected"));
+    return mutate(() => client.addWorker({
+      orgId: currentPersona.organizationId,
+      workerName: name,
+      workerEmail: email,
+    }));
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans pb-16 sm:pb-0">
@@ -351,8 +365,10 @@ function FairShiftApp() {
                 shifts={data.shifts}
                 disputes={data.disputes}
                 dashboardData={data.dashboard}
+                workers={workers}
                 onSetRecordedPay={(id, amount) => mutate(() => client.setRecordedPay(id, amount))}
                 onResolveDispute={handleResolveDispute}
+                onAddWorker={handleAddWorker}
               />
             )}
             {!isWorker && currentView === "DISPUTES" && (

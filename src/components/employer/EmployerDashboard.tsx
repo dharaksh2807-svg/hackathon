@@ -7,10 +7,12 @@ import type {
   DashboardResponse,
   PortalIdentity,
   ResolveDisputeRequest,
+  OrgWorker,
 } from "@/lib/api-client/types";
 import { Badge } from "../common/Badge";
 import { RecordPayModal } from "./RecordPayModal";
 import { ResolveDisputeModal } from "./ResolveDisputeModal";
+import { AddWorkerModal } from "./AddWorkerModal";
 import { DisputeDetailModal } from "../disputes/DisputeDetailModal";
 import { EmptyState } from "../common/EmptyState";
 import { formatPaise, formatDiscrepancy } from "@/lib/api-client/currency";
@@ -22,8 +24,10 @@ interface EmployerDashboardProps {
   shifts: Shift[];
   disputes: Dispute[];
   dashboardData: DashboardResponse["data"] | null;
+  workers: OrgWorker[];
   onSetRecordedPay: (shiftId: string, amountMinor: number) => Promise<void>;
   onResolveDispute: (disputeId: string, req: ResolveDisputeRequest) => Promise<void>;
+  onAddWorker: (workerName: string, workerEmail: string) => Promise<void>;
 }
 
 export function EmployerDashboard({
@@ -31,16 +35,19 @@ export function EmployerDashboard({
   shifts,
   disputes,
   dashboardData,
+  workers,
   onSetRecordedPay,
   onResolveDispute,
+  onAddWorker,
 }: EmployerDashboardProps) {
   const { showToast } = useToast();
-  const [activeTab, setActiveTab] = useState<"DISCREPANCIES" | "DISPUTES" | "ALL_SHIFTS">("DISCREPANCIES");
+  const [activeTab, setActiveTab] = useState<"DISCREPANCIES" | "DISPUTES" | "ALL_SHIFTS" | "WORKERS">("DISCREPANCIES");
 
   // Modals
   const [payModalShift, setPayModalShift] = useState<Shift | null>(null);
   const [resolveModalDispute, setResolveModalDispute] = useState<Dispute | null>(null);
   const [inspectDispute, setInspectDispute] = useState<Dispute | null>(null);
+  const [showAddWorkerModal, setShowAddWorkerModal] = useState(false);
 
   const handleRecordPaySubmit = async (shiftId: string, amountMinor: number) => {
     await onSetRecordedPay(shiftId, amountMinor);
@@ -60,6 +67,15 @@ export function EmployerDashboard({
     });
   };
 
+  const handleAddWorkerSubmit = async (workerName: string, workerEmail: string) => {
+    await onAddWorker(workerName, workerEmail);
+    showToast({
+      type: "success",
+      title: "Worker Invited",
+      message: `${workerName} has been added and will receive an invitation email at ${workerEmail}.`,
+    });
+  };
+
   // Discrepant shifts (underpaid or unrecorded)
   const discrepantShifts = shifts.filter(
     (s) => s.status === "COMPLETED" && (s.comparisonStatus === "UNDERPAID" || s.comparisonStatus === "NOT_RECORDED")
@@ -68,13 +84,13 @@ export function EmployerDashboard({
   const openDisputes = disputes.filter((d) => d.status === "OPEN");
 
   return (
-    <div className="space-y-6" aria-label={`${persona.organizationName} employer dashboard`}>
+    <div className="space-y-6">
       {/* High-Level Overview Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Metric 1: Expected Shift Obligations */}
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            <span>Configured Wage Expected</span>
+            <span>Statutory Wage Expected</span>
             <span className="text-emerald-700 font-bold">Rule Engine</span>
           </div>
           <div className="text-2xl font-black text-slate-900 tracking-tight">
@@ -85,11 +101,11 @@ export function EmployerDashboard({
           </div>
         </div>
 
-        {/* Metric 2: Recorded / Recorded */}
+        {/* Metric 2: Disbursed / Recorded */}
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider">
             <span>Employer Recorded Pay</span>
-            <span className="text-slate-600">Recorded</span>
+            <span className="text-slate-600">Disbursed</span>
           </div>
           <div className="text-2xl font-black text-slate-900 tracking-tight">
             {dashboardData ? formatPaise(dashboardData.totalRecordedMinor) : "₹0.00"}
@@ -118,7 +134,7 @@ export function EmployerDashboard({
           </div>
           <div className="text-xs text-slate-600">
             {(dashboardData?.underpaidShifts ?? 0) > 0
-              ? "Shifts where recorded pay is below configured expected"
+              ? "Shifts where recorded pay is below statutory expected"
               : "Full parity across recorded rosters"}
           </div>
         </div>
@@ -145,8 +161,6 @@ export function EmployerDashboard({
           </div>
         </div>
       </div>
-
-      <p className="text-xs text-slate-500">Shift tables show up to 20 recent shifts for the selected month. Totals above cover the full month; disputes cover all dates.</p>
 
       {/* Tabs navigation */}
       <div className="border-b border-slate-200">
@@ -194,7 +208,28 @@ export function EmployerDashboard({
                 : "border-transparent text-slate-600 hover:text-slate-900"
             }`}
           >
-            <span>Recent Shift Roster ({shifts.length}, up to 20)</span>
+            <span>Complete Shift Roster ({shifts.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("WORKERS")}
+            className={`py-3 px-4 border-b-2 font-medium transition-colors flex items-center gap-2 whitespace-nowrap ${
+              activeTab === "WORKERS"
+                ? "border-violet-600 text-violet-900 bg-violet-50/40"
+                : "border-transparent text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <span>Workers</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-xs ${
+                activeTab === "WORKERS"
+                  ? "bg-violet-100 text-violet-900"
+                  : "bg-slate-100 text-slate-600"
+              }`}
+            >
+              {workers.length}
+            </span>
           </button>
         </div>
       </div>
@@ -211,7 +246,7 @@ export function EmployerDashboard({
           {discrepantShifts.length === 0 ? (
             <EmptyState
               title="No Wage Discrepancies Found"
-              description="All completed shifts have employer-recorded pay that satisfies or exceeds configured expectations."
+              description="All completed shifts have employer-recorded pay that satisfies or exceeds statutory expectations."
             />
           ) : (
             <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-xs">
@@ -221,7 +256,7 @@ export function EmployerDashboard({
                     <tr>
                       <th className="py-3 px-4">Shift Details</th>
                       <th className="py-3 px-4">Worked Time</th>
-                      <th className="py-3 px-4 text-right">Configured Expected</th>
+                      <th className="py-3 px-4 text-right">Statutory Expected</th>
                       <th className="py-3 px-4 text-right">Employer Recorded</th>
                       <th className="py-3 px-4">Variance Status</th>
                       <th className="py-3 px-4 text-right">Action</th>
@@ -322,7 +357,11 @@ export function EmployerDashboard({
                         {dispute.status === "OPEN" ? (
                           <button
                             type="button"
-                            onClick={() => setResolveModalDispute(dispute)}
+                            onClick={() => {
+                              if (shift) {
+                                setResolveModalDispute(dispute);
+                              }
+                            }}
                             className="px-3.5 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
                           >
                             Adjudicate Case
@@ -362,7 +401,7 @@ export function EmployerDashboard({
         </div>
       )}
 
-      {/* TAB 3: Recent Organization Shifts (up to 20) */}
+      {/* TAB 3: All Organization Shifts */}
       {activeTab === "ALL_SHIFTS" && (
         <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-xs">
           <div className="overflow-x-auto">
@@ -372,7 +411,7 @@ export function EmployerDashboard({
                   <th className="py-3 px-4">Site / Role</th>
                   <th className="py-3 px-4">Shift Status</th>
                   <th className="py-3 px-4">Worked Time</th>
-                  <th className="py-3 px-4 text-right">Configured Expected</th>
+                  <th className="py-3 px-4 text-right">Statutory Expected</th>
                   <th className="py-3 px-4 text-right">Recorded Amount</th>
                   <th className="py-3 px-4">Comparison Parity</th>
                   <th className="py-3 px-4 text-right">Action</th>
@@ -437,9 +476,87 @@ export function EmployerDashboard({
         </div>
       )}
 
+      {/* TAB 4: Worker Roster */}
+      {activeTab === "WORKERS" && (
+        <div className="space-y-4">
+          {/* Header with Add Worker button */}
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-slate-600">
+              Workers enrolled in <strong>{persona.organizationName}</strong>. Each worker can
+              check in to shifts and raise pay disputes.
+            </p>
+            <button
+              type="button"
+              id="add-worker-btn"
+              onClick={() => setShowAddWorkerModal(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm whitespace-nowrap"
+            >
+              <svg
+                className="w-3.5 h-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2.5}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              Add Worker
+            </button>
+          </div>
+
+          {workers.length === 0 ? (
+            <EmptyState
+              title="No Workers Yet"
+              description="Add your first worker above. They will receive an invitation email and can immediately start recording shifts."
+            />
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {workers.map((w) => {
+                const initials = w.displayName
+                  .split(" ")
+                  .slice(0, 2)
+                  .map((p) => p[0]?.toUpperCase() ?? "")
+                  .join("");
+                const joined = new Date(w.joinedAt);
+                const joinedLabel = isNaN(joined.getTime())
+                  ? w.joinedAt
+                  : joined.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+
+                return (
+                  <div
+                    key={w.membershipId}
+                    className="flex items-start gap-3 p-4 bg-white rounded-xl border border-slate-200 shadow-xs hover:border-slate-300 transition-colors"
+                  >
+                    {/* Avatar */}
+                    <div className="w-9 h-9 rounded-full bg-violet-100 text-violet-800 flex items-center justify-center font-bold text-xs shrink-0 select-none">
+                      {initials || "?"}
+                    </div>
+
+                    {/* Details */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-slate-900 text-sm truncate">
+                          {w.displayName}
+                        </span>
+                        <Badge variant="planned" size="sm">
+                          Worker
+                        </Badge>
+                      </div>
+                      {w.workerEmail && (
+                        <div className="text-xs text-slate-500 mt-0.5 truncate">{w.workerEmail}</div>
+                      )}
+                      <div className="text-[11px] text-slate-400 mt-1">Joined {joinedLabel}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Modals */}
       <RecordPayModal
-        key={payModalShift?.id ?? "closed"}
         shift={payModalShift}
         isOpen={Boolean(payModalShift)}
         onClose={() => setPayModalShift(null)}
@@ -447,7 +564,6 @@ export function EmployerDashboard({
       />
 
       <ResolveDisputeModal
-        key={resolveModalDispute?.id ?? "closed"}
         dispute={resolveModalDispute}
         shift={resolveModalDispute ? shifts.find((s) => s.id === resolveModalDispute.shiftId) ?? null : null}
         isOpen={Boolean(resolveModalDispute)}
@@ -456,11 +572,18 @@ export function EmployerDashboard({
       />
 
       <DisputeDetailModal
-        dispute={disputes.find(dispute => dispute.id === inspectDispute?.id) ?? null}
+        dispute={inspectDispute}
         shift={inspectDispute ? shifts.find((s) => s.id === inspectDispute.shiftId) : null}
         isOpen={Boolean(inspectDispute)}
         onClose={() => setInspectDispute(null)}
         isEmployer={true}
+      />
+
+      <AddWorkerModal
+        isOpen={showAddWorkerModal}
+        organizationName={persona.organizationName}
+        onClose={() => setShowAddWorkerModal(false)}
+        onSubmit={handleAddWorkerSubmit}
       />
     </div>
   );

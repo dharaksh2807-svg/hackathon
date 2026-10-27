@@ -31,6 +31,33 @@ export const EmptyBodySchema = z.object({}).strict();
 export const CheckoutRequestSchema = z.object({ unpaidBreakMinutes: z.number().int().min(0).max(1_440) }).strict();
 export const CreateDisputeRequestSchema = z.object({ shiftId: UuidSchema, reason: ReasonSchema }).strict();
 export const SetRecordedPayRequestSchema = z.object({ amountMinor: MoneyMinorSchema }).strict();
+export const WorkerNameSchema = z.string().trim().min(1).max(100);
+export const AddWorkerRequestSchema = z.object({
+  orgId: UuidSchema,
+  workerName: WorkerNameSchema,
+  workerEmail: z.string().email().max(254),
+}).strict();
+export const OrgWorkerSchema = z.object({
+  membershipId: UuidSchema,
+  authUserId: UuidSchema,
+  organizationId: UuidSchema,
+  role: RoleSchema,
+  displayName: z.string(),
+  workerEmail: z.string().email().nullable(),
+  joinedAt: z.string(),
+}).strict();
+export const AddWorkerResponseSchema = z.object({
+  data: z.object({
+    membershipId: UuidSchema,
+    authUserId: UuidSchema,
+    displayName: z.string(),
+    workerEmail: z.string(),
+    isNewUser: z.boolean(),
+  }).strict(),
+}).strict();
+export const OrgWorkersResponseSchema = z.object({
+  data: z.array(OrgWorkerSchema),
+}).strict();
 export const ResolveDisputeRequestSchema = z.discriminatedUnion("decision", [
   z.object({ decision: z.literal("APPROVED"), explanation: ExplanationSchema, correctedRecordedAmountMinor: MoneyMinorSchema }).strict(),
   z.object({ decision: z.literal("REJECTED"), explanation: ExplanationSchema }).strict(),
@@ -132,3 +159,7 @@ export type DisputesQuery = z.infer<typeof DisputesQuerySchema>;
 export type DashboardQuery = z.infer<typeof DashboardQuerySchema>;
 export type EmptyBody = z.infer<typeof EmptyBodySchema>;
 export type EarningsBreakdown = z.infer<typeof EarningsBreakdownSchema>;
+export type AddWorkerRequest = z.infer<typeof AddWorkerRequestSchema>;
+export type OrgWorker = z.infer<typeof OrgWorkerSchema>;
+export type AddWorkerResponse = z.infer<typeof AddWorkerResponseSchema>;
+export type OrgWorkersResponse = z.infer<typeof OrgWorkersResponseSchema>;

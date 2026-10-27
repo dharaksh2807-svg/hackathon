@@ -23,6 +23,10 @@ import type {
   ResolveDisputeRequest,
   SetRecordedPayRequest,
   CheckoutRequest,
+  AddWorkerRequest,
+  OrgWorker,
+  AddWorkerResponse,
+  OrgWorkersResponse,
 } from "../contracts.ts";
 
 export type {
@@ -45,6 +49,10 @@ export type {
   ResolveDisputeRequest,
   SetRecordedPayRequest,
   CheckoutRequest,
+  AddWorkerRequest,
+  OrgWorker,
+  AddWorkerResponse,
+  OrgWorkersResponse,
 };
 
 export type ShiftStatus = Shift["status"]; // "PLANNED" | "CHECKED_IN" | "COMPLETED"

@@ -18,6 +18,9 @@ import type {
   CreateDisputeRequest,
   ResolveDisputeRequest,
   Sector,
+  AddWorkerRequest,
+  AddWorkerResponse,
+  OrgWorkersResponse,
 } from "./types.ts";
 
 import {
@@ -31,6 +34,8 @@ import {
   DashboardResponseSchema,
   RecordedPayResponseSchema,
   ResolveDisputeResponseSchema,
+  AddWorkerResponseSchema,
+  OrgWorkersResponseSchema,
 } from "../contracts.ts";
 
 export class ApiError extends Error {
@@ -59,6 +64,8 @@ export interface FairShiftApiClient {
   getEmployerDashboard(params: { orgId: string; month: string; sector?: Sector }): Promise<DashboardResponse>;
   setRecordedPay(shiftId: string, amountMinor: number): Promise<RecordedPayResponse>;
   resolveDispute(disputeId: string, req: ResolveDisputeRequest): Promise<ResolveDisputeResponse>;
+  listOrgWorkers(params: { orgId: string }): Promise<OrgWorkersResponse>;
+  addWorker(req: AddWorkerRequest): Promise<AddWorkerResponse>;
 }
 
 /**
@@ -177,6 +184,18 @@ export class HttpApiClient implements FairShiftApiClient {
   async resolveDispute(disputeId: string, req: ResolveDisputeRequest): Promise<ResolveDisputeResponse> {
     return this.request(`/api/employer/disputes/${encodeURIComponent(disputeId)}/resolve`, ResolveDisputeResponseSchema, {
       method: "PATCH",
+      body: JSON.stringify(req),
+    });
+  }
+
+  async listOrgWorkers(params: { orgId: string }): Promise<OrgWorkersResponse> {
+    const query = new URLSearchParams({ orgId: params.orgId });
+    return this.request(`/api/employer/workers?${query.toString()}`, OrgWorkersResponseSchema, { method: "GET" });
+  }
+
+  async addWorker(req: AddWorkerRequest): Promise<AddWorkerResponse> {
+    return this.request("/api/employer/workers", AddWorkerResponseSchema, {
+      method: "POST",
       body: JSON.stringify(req),
     });
   }
