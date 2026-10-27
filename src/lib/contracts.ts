@@ -44,7 +44,7 @@ export const OrgWorkerSchema = z.object({
   role: RoleSchema,
   displayName: z.string(),
   workerEmail: z.string().email().nullable(),
-  joinedAt: z.string(),
+  joinedAt: z.string(), // ISO timestamp; may include tz offset from Supabase
 }).strict();
 export const AddWorkerResponseSchema = z.object({
   data: z.object({
@@ -58,6 +58,7 @@ export const AddWorkerResponseSchema = z.object({
 export const OrgWorkersResponseSchema = z.object({
   data: z.array(OrgWorkerSchema),
 }).strict();
+
 export const ResolveDisputeRequestSchema = z.discriminatedUnion("decision", [
   z.object({ decision: z.literal("APPROVED"), explanation: ExplanationSchema, correctedRecordedAmountMinor: MoneyMinorSchema }).strict(),
   z.object({ decision: z.literal("REJECTED"), explanation: ExplanationSchema }).strict(),

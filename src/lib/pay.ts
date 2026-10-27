@@ -35,7 +35,6 @@ export function roundHalfUp(numerator: bigint, denominator: bigint): number {
 }
 
 export function calculateExpectedPay(rule: PayRuleSnapshot, workedMinutes: number, weekendEligible: boolean): EarningsBreakdown {
-  if (typeof weekendEligible !== "boolean") throw new RangeError("Invalid weekend eligibility");
   if (!Number.isSafeInteger(workedMinutes) || workedMinutes < 1 || workedMinutes > 1_440) throw new RangeError("Invalid worked minutes");
   for (const amount of [rule.rateMinor, rule.fixedAllowanceMinor, rule.weekendBonusMinor]) safeMinor(amount);
   if (!Number.isSafeInteger(rule.overtimeAfterMinutes) || rule.overtimeAfterMinutes < 0 || rule.overtimeAfterMinutes > 1_440) throw new RangeError("Invalid overtime threshold");

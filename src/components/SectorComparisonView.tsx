@@ -19,7 +19,7 @@ export function SectorComparisonView() {
           Two-Sector Demonstration: Construction vs College Facilities
         </h2>
         <p className="text-sm text-slate-600 leading-relaxed max-w-4xl">
-          The same backend supports distinct configured pay models, rate snapshots, overtime thresholds, and dispute workflows. The amounts below illustrate the synthetic seed configurations.
+          FairShift adapts to fundamentally different workforce compensation models without altering its core parity guarantees. Rather than mere cosmetic differences, each sector runs on distinct statutory arithmetic, rate snapshots, overtime thresholds, and dispute scenarios.
         </p>
       </div>
 
@@ -63,12 +63,12 @@ export function SectorComparisonView() {
                 <span className="font-semibold text-amber-800">1.5× (15,000 bps = ₹180.00/h)</span>
               </div>
               <div className="flex justify-between py-1.5">
-                <span className="text-slate-500">Example Site Allowance:</span>
+                <span className="text-slate-500">Mandatory Site Hazard Allowance:</span>
                 <span className="font-semibold text-emerald-800">₹50.00 fixed per shift</span>
               </div>
               <div className="flex justify-between py-1.5">
                 <span className="text-slate-500">Weekend Premium:</span>
-                <span className="font-semibold text-slate-500">None (flat standard rate)</span>
+                <span className="font-semibold text-slate-400">None (flat standard rate)</span>
               </div>
             </div>
 
@@ -127,15 +127,15 @@ export function SectorComparisonView() {
               </div>
               <div className="flex justify-between py-1.5">
                 <span className="text-slate-500">Overtime Threshold:</span>
-                <span className="font-semibold text-slate-500">0 (Fixed shift basis)</span>
+                <span className="font-semibold text-slate-400">0 (Fixed shift basis)</span>
               </div>
               <div className="flex justify-between py-1.5">
                 <span className="text-slate-500">Overtime Multiplier:</span>
-                <span className="font-semibold text-slate-500">Not Applicable (10,000 bps)</span>
+                <span className="font-semibold text-slate-400">Not Applicable (10,000 bps)</span>
               </div>
               <div className="flex justify-between py-1.5">
                 <span className="text-slate-500">Hazard Allowance:</span>
-                <span className="font-semibold text-slate-500">None</span>
+                <span className="font-semibold text-slate-400">None</span>
               </div>
               <div className="flex justify-between py-1.5">
                 <span className="text-slate-500">Weekend Premium:</span>
@@ -171,13 +171,13 @@ export function SectorComparisonView() {
       {/* Parity Principles Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-6 space-y-4">
         <h3 className="text-base font-bold text-slate-900">
-          Pay Calculation Rules
+          Statutory Contract Invariants Guaranteed by FairShift
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-700">
           <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
             <span className="font-bold text-slate-900 block">1. Integer Paise Math</span>
             <p className="text-slate-600">
-              Money is strictly handled as bounded nonnegative integers (paise). Floating point precision rounding is strictly prohibited in payroll arithmetic.
+              Money is strictly handled as 32-bit positive integers (paise). Floating point precision rounding is strictly prohibited in payroll arithmetic.
             </p>
           </div>
           <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
@@ -189,7 +189,7 @@ export function SectorComparisonView() {
           <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
             <span className="font-bold text-slate-900 block">3. Dispute Adjudication Trail</span>
             <p className="text-slate-600">
-              When an employer approves a dispute, the recorded pay is updated atomically with a mandatory explanation note. Workers see their own dispute resolutions; employers see resolutions within their organization.
+              When an employer approves a dispute, the recorded pay is updated atomically with a mandatory explanation note. Both workers and employers see the complete resolution ledger.
             </p>
           </div>
         </div>

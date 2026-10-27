@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { SECTOR_DEFINITIONS } from "@/lib/api-client/types";
 
 export function IntroSection() {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -8,22 +9,21 @@ export function IntroSection() {
   return (
     <div className="bg-slate-900 text-white border-b border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5">
-        <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+        <div className="flex items-start justify-between gap-4">
           <div>
             <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-blue-950 border border-blue-800 text-blue-300 text-xs font-semibold uppercase tracking-wider mb-2">
               <span>Fair Workforce Transparency Protocol</span>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
-              FairShift — Shift Attendance & Earnings Comparison
+              FairShift — Verified Shift Attendance & Real-Time Earnings Parity
             </h1>
             <p className="mt-1 text-slate-300 text-sm max-w-3xl leading-relaxed">
-              Identifying differences between expected and recorded shift pay. Workers track exact expected earnings calculated from immutable shift rule snapshots, compare them against employer-recorded pay, and raise structured disputes with audit logs.
+              Eliminating wage shortfalls for frontline shifts. Workers track exact expected earnings calculated from immutable shift rule snapshots, compare them against employer-recorded pay, and raise structured disputes with audit logs.
             </p>
           </div>
 
           <button
             type="button"
-            aria-expanded={isExpanded}
             onClick={() => setIsExpanded(!isExpanded)}
             className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg border border-slate-700 hover:border-slate-500 transition-colors shrink-0"
           >
@@ -49,7 +49,7 @@ export function IntroSection() {
                 <span>🛡️ Immutable Pay Snapshots</span>
               </div>
               <p className="text-slate-300 text-xs leading-relaxed">
-                Every shift locks its configured rates at creation. Server timestamps and worker-reported breaks calculate expected pay in integer paise (<code className="text-blue-300">roundHalfUp</code>). Differences trigger instant <span className="text-amber-300 font-semibold">UNDERPAID</span> indicators.
+                Every shift locks its statutory rates at creation. Server timestamps and verified break attestations calculate expected pay in integer paise (<code className="text-blue-300">roundHalfUp</code>). Differences trigger instant <span className="text-amber-300 font-semibold">UNDERPAID</span> indicators.
               </p>
             </div>
 

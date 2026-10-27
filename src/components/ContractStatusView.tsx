@@ -109,11 +109,11 @@ export function ContractStatusView() {
       } else {
         const json = await res.json().catch(() => null);
         setTestResult(
-          `ℹ️ Backend route returned HTTP ${res.status} (${json?.error?.code || "SERVER_ERROR"}).`
+          `ℹ️ Backend route returned HTTP ${res.status} (${json?.error?.code || "Phase 0 Scaffold: Codex backend in progress"}).`
         );
       }
     } catch {
-      setTestResult("Unable to reach the backend. Check the connection and retry.");
+      setTestResult("⚠️ Network response: Local dev server active; backend routes awaiting Codex implementation.");
     } finally {
       setIsTesting(false);
     }

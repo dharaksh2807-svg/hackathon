@@ -96,14 +96,14 @@ export function WorkerDashboard({
     return true;
   });
 
-  const underpaidCount = earnings?.underpaidCount ?? 0;
-  const netShortfallPaise = (earnings?.shifts ?? [])
+  const underpaidCount = shifts.filter((s) => s.comparisonStatus === "UNDERPAID").length;
+  const netShortfallPaise = shifts
     .filter((s) => s.comparisonStatus === "UNDERPAID" && s.differenceMinor && s.differenceMinor > 0)
     .reduce((acc, s) => acc + (s.differenceMinor ?? 0), 0);
 
   return (
     <div className="space-y-6">
-      {/* Monthly Financial Reconciliation Cards */}
+      {/* Monthly Earnings Summary Cards — worker-friendly labels */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Expected Earnings */}
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-1">
@@ -111,11 +111,11 @@ export function WorkerDashboard({
             <span className="text-xs font-semibold text-slate-500 leading-tight">{t("moneyIShouldGet")}</span>
             <span className="text-lg">💰</span>
           </div>
-          <div className="text-2xl font-black text-slate-900 tracking-tight">
+          <div className="text-2xl font-black text-emerald-700 tracking-tight">
             {earnings ? formatPaise(earnings.totalExpectedMinor) : "₹0.00"}
           </div>
           <div className="text-xs text-slate-500">
-            {earnings?.completedCount ?? 0} {t("completedShifts")}
+            {earnings?.completedCount ?? 0} {t("completedShiftsCount")}
           </div>
         </div>
 
@@ -179,13 +179,13 @@ export function WorkerDashboard({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs self-start sm:self-auto">
+        <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs self-start sm:self-auto">
           <button
             type="button"
             onClick={() => setActiveFilter("ALL")}
             className={`px-3 py-1.5 rounded-md font-medium transition-all ${
               activeFilter === "ALL"
-                ? "bg-white text-slate-900 shadow-xs font-semibold"
+                ? "bg-white text-slate-900 shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
@@ -212,7 +212,7 @@ export function WorkerDashboard({
             onClick={() => setActiveFilter("ACTIVE")}
             className={`px-3 py-1.5 rounded-md font-medium transition-all ${
               activeFilter === "ACTIVE"
-                ? "bg-white text-slate-900 shadow-xs font-semibold"
+                ? "bg-white text-slate-900 shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
@@ -223,7 +223,7 @@ export function WorkerDashboard({
             onClick={() => setActiveFilter("COMPLETED")}
             className={`px-3 py-1.5 rounded-md font-medium transition-all ${
               activeFilter === "COMPLETED"
-                ? "bg-white text-slate-900 shadow-xs font-semibold"
+                ? "bg-white text-slate-900 shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
@@ -270,7 +270,6 @@ export function WorkerDashboard({
 
       {/* Modals */}
       <CheckOutModal
-        key={checkoutShift?.id ?? "closed"}
         shift={checkoutShift}
         isOpen={Boolean(checkoutShift)}
         onClose={() => setCheckoutShift(null)}
@@ -278,7 +277,7 @@ export function WorkerDashboard({
       />
 
       <EarningsBreakdownModal
-        shift={shifts.find(shift => shift.id === breakdownShift?.id) ?? null}
+        shift={breakdownShift}
         dispute={breakdownShift ? disputes.find((d) => d.shiftId === breakdownShift.id) : null}
         isOpen={Boolean(breakdownShift)}
         onClose={() => setBreakdownShift(null)}
@@ -287,7 +286,6 @@ export function WorkerDashboard({
       />
 
       <RaiseDisputeModal
-        key={disputeShift?.id ?? "closed"}
         shift={disputeShift}
         isOpen={Boolean(disputeShift)}
         onClose={() => setDisputeShift(null)}
@@ -295,7 +293,7 @@ export function WorkerDashboard({
       />
 
       <DisputeDetailModal
-        dispute={disputes.find(dispute => dispute.id === inspectDispute?.id) ?? null}
+        dispute={inspectDispute}
         shift={inspectDispute ? shifts.find((s) => s.id === inspectDispute.shiftId) : null}
         isOpen={Boolean(inspectDispute)}
         onClose={() => setInspectDispute(null)}
