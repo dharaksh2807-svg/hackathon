@@ -100,9 +100,12 @@ export function ShiftCard({
           <span className="text-slate-500 block">{t("moneyStillMissing")}</span>
           <div className="mt-0.5">
             <Badge variant={discrepancy.badgeVariant} size="sm">
-              {shift.comparisonStatus === "MATCHED" ? t("statusMatchedPay")
-                : shift.comparisonStatus === "UNDERPAID" ? t("statusUnderpaid")
-                : shift.comparisonStatus === "OVERPAID" ? t("statusOverpaid")
+              {shift.comparisonStatus === "MATCHED"
+                ? t("statusMatchedPay")
+                : shift.comparisonStatus === "UNDERPAID"
+                ? t("statusUnderpaid")
+                : shift.comparisonStatus === "OVERPAID"
+                ? t("statusOverpaid")
                 : t("statusNotRecorded")}
             </Badge>
           </div>
@@ -132,8 +135,10 @@ export function ShiftCard({
               }
               size="sm"
             >
-              {dispute.status === "OPEN" ? t("complaintOpen")
-                : dispute.status === "APPROVED" ? t("complaintApproved")
+              {dispute.status === "OPEN"
+                ? t("complaintOpen")
+                : dispute.status === "APPROVED"
+                ? t("complaintApproved")
                 : t("complaintRejected")}
             </Badge>
           </div>
@@ -185,7 +190,7 @@ export function ShiftCard({
                 {t("viewPayDetails")}
               </button>
 
-              {!dispute && (
+              {(!dispute || dispute.status !== "OPEN") && (
                 <button
                   type="button"
                   onClick={() => onRaiseDispute(shift)}

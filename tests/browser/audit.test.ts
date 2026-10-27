@@ -2,6 +2,7 @@
  * They test rendering/accessibility only, not real Auth, persistence or authorization.
  * Run against a local app with FAIRSHIFT_BROWSER_URL and an external Playwright driver.
  */
+import { TRANSLATIONS } from "../../src/lib/i18n/translations.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { FIXTURE_MEMBERSHIPS, FIXTURE_DISPUTES, FIXTURE_CONSTRUCTION_SHIFTS, FIXTURE_CAMPUS_SHIFTS, getFixtureWorkerEarnings, getFixtureEmployerDashboard } from "../../src/lib/api-client/fixtures.ts";
@@ -14,6 +15,7 @@ async function fixturePage(sector: "construction" | "campus" = "construction", r
   const { chromium } = await import(driver!);
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width, height: 900 } });
+  await page.addInitScript(() => { localStorage.setItem("fairshift_onboarding_done", "1"); localStorage.setItem("fairshift_lang", "en"); });
   const membership = FIXTURE_MEMBERSHIPS.find(m => m.sector === sector && m.role === role)!;
   const shifts = sector === "construction" ? FIXTURE_CONSTRUCTION_SHIFTS : FIXTURE_CAMPUS_SHIFTS;
   await page.route("**/api/**", async (route: { request(): { url(): string; method(): string }; fulfill(response: { status: number; contentType: string; body: string }): Promise<void> }) => {
@@ -28,16 +30,18 @@ async function fixturePage(sector: "construction" | "campus" = "construction", r
     else if (path === "/api/worker/shifts") response = { data: shifts, paging: { limit: 100, offset: 0, nextOffset: null } };
     else if (path === "/api/worker/earnings") response = { data: getFixtureWorkerEarnings(sector) };
     else if (path === "/api/employer/dashboard") response = { data: getFixtureEmployerDashboard(sector) };
+    else if (path === "/api/employer/workers") response = { data: [] };
     else if (path === "/api/disputes") response = { data: role === "EMPLOYER" ? FIXTURE_DISPUTES.filter(d => d.organizationId === membership.organizationId).map(d => missingDisputeShift ? { ...d, shiftId: "40000000-0000-4000-8000-000000000099" } : d) : [], paging: { limit: 100, offset: 0, nextOffset: null } };
     else throw new Error(`Unexpected audit fixture path: ${path}`);
     await route.fulfill({ status, contentType: "application/json", body: JSON.stringify(response) });
   });
   try {
     await page.goto(base!);
-    await page.getByRole("button", { name: role === "WORKER" ? "Worker Portal" : "Employer Portal", exact: true }).waitFor();
+    if (role === "WORKER") await page.getByRole("button", { name: /^My Work/ }).click();
+    else await page.getByRole("button", { name: "Employer Portal", exact: true }).waitFor();
     await page.getByText(membership.organizationName, { exact: true }).waitFor();
     await page.getByText(shifts[0].siteLabel, { exact: true }).first().waitFor();
-    await page.getByRole("button", { name: role === "WORKER" ? "View Pay Math" : /Adjust Pay|Enter Pay/, exact: true }).first().waitFor();
+    await page.getByRole("button", { name: role === "WORKER" ? "View Pay Details" : /Adjust Pay|Enter Pay/, exact: true }).first().waitFor();
   } catch (error) { await browser.close(); throw error; }
   return { browser, page };
 }
@@ -45,7 +49,7 @@ async function fixturePage(sector: "construction" | "campus" = "construction", r
 test("dialog focuses, contains keyboard navigation, hides background interaction, and restores focus", options, async () => {
   const { browser, page } = await fixturePage();
   try {
-    const trigger = page.getByRole("button", { name: "Raise Dispute", exact: true }).first();
+    const trigger = page.getByRole("button", { name: /Report Missing Money/ }).first();
     await trigger.focus(); await page.keyboard.press("Enter");
     const dialog = page.getByRole("dialog"); await dialog.waitFor();
     assert.equal(await dialog.evaluate((element: HTMLElement) => element.contains(document.activeElement)), true, "Opening must move focus into the dialog");
@@ -53,8 +57,8 @@ test("dialog focuses, contains keyboard navigation, hides background interaction
       await page.keyboard.press(i < 6 ? "Tab" : "Shift+Tab");
       assert.equal(await dialog.evaluate((element: HTMLElement) => element.contains(document.activeElement)), true, "Tab must not reach the background");
     }
-    assert.equal(await page.getByRole("navigation", { includeHidden: true }).evaluate((element: HTMLElement) => Boolean(element.closest("[inert]"))), true);
-    const field = dialog.getByLabel("Reason for Dispute");
+    assert.equal(await page.getByRole("navigation", { includeHidden: true }).first().evaluate((element: HTMLElement) => Boolean(element.closest("[inert]"))), true);
+    const field = dialog.getByLabel("What is the problem?");
     await field.fill("short");
     assert.equal(await field.getAttribute("aria-invalid"), "true");
     assert.ok(await field.getAttribute("aria-describedby"));
@@ -77,7 +81,7 @@ test("dialog focuses, contains keyboard navigation, hides background interaction
 test("checkout accepts every whole break minute and announces server validation failures", options, async () => {
   const { browser, page } = await fixturePage();
   try {
-    await page.getByRole("button", { name: "Record Check Out", exact: true }).first().click();
+    await page.getByRole("button", { name: /Check Out/ }).first().click();
     const dialog = page.getByRole("dialog");
     const input = dialog.getByLabel("Unpaid Break Duration (Minutes)");
     await input.fill("17");
@@ -106,7 +110,7 @@ test("worker and employer portals fit 320px and 375px screens in both sectors", 
       }
       assert.doesNotMatch(await page.getByRole("main").innerText(), /statutory|disbursed/i);
       await page.screenshot({ path: `/tmp/fairshift-audit-${sector}-${role}.png` });
-      await page.getByRole("button", { name: /^Disputes/ }).click();
+      await page.getByRole("button", { name: role === "WORKER" ? "Complaints" : /^Disputes/, exact: role === "WORKER" }).first().click();
       await page.getByRole("heading", { name: role === "WORKER" ? "My Wage Disputes" : "Organization Dispute Ledger", exact: true }).waitFor();
       const ledgerWidth = await page.evaluate(() => document.documentElement.scrollWidth);
       assert.ok(ledgerWidth <= 375, `${sector} ${role} dispute ledger overflows at 375px: ${ledgerWidth}`);
@@ -130,9 +134,9 @@ test("recorded-pay form accepts the full contract maximum including 47 paise", o
 test("employer can open resolution for a dispute outside the twenty recent shifts", options, async () => {
   const { browser, page } = await fixturePage("construction", "EMPLOYER", 320, true);
   try {
-    const queue = page.getByRole("button", { name: /Dispute Adjudication Queue/ });
+    const queue = page.getByRole("button", { name: /Dispute Review Queue/ });
     await queue.focus(); await page.keyboard.press("Enter");
-    const action = page.getByRole("button", { name: "Adjudicate Case", exact: true }).first();
+    const action = page.getByRole("button", { name: "Review Dispute", exact: true }).first();
     await action.focus(); await page.keyboard.press("Enter");
     const dialog = page.getByRole("dialog");
     await dialog.waitFor({ timeout: 2000 });
@@ -151,11 +155,31 @@ test("employer can open resolution for a dispute outside the twenty recent shift
 test("a mutation rejected for an expired session clears cached records and shows labeled sign-in", options, async () => {
   const { browser, page } = await fixturePage("construction", "WORKER", 1280, false, true);
   try {
-    await page.getByRole("button", { name: "Check In Now", exact: true }).first().click();
+    await page.getByRole("button", { name: /Check In/ }).first().click();
     await page.getByRole("heading", { name: "Sign in to FairShift", exact: true }).waitFor({ timeout: 2000 });
     assert.equal(await page.getByRole("heading", { name: /Masonry/ }).count(), 0);
     await page.getByLabel("Email", { exact: true }).focus();
     await page.keyboard.press("Tab");
     assert.equal(await page.getByLabel("Password", { exact: true }).evaluate((element: HTMLElement) => element === document.activeElement), true);
+  } finally { await browser.close(); }
+});
+
+
+test("an empty reporting month shows no historical earnings in the tracker or My Money", options, async () => {
+  const { browser, page } = await fixturePage();
+  try {
+    await page.route("**/api/worker/earnings?**", async (route: { fulfill(response: { status: number; contentType: string; body: string }): Promise<void> }) => {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ data: {
+        ...getFixtureWorkerEarnings("construction"), month: "2026-09", shifts: [],
+        totalExpectedMinor: 0, totalRecordedMinor: 0, completedCount: 0, recordedCount: 0, underpaidCount: 0,
+      } }) });
+    });
+    await page.getByLabel("Reporting month (Asia/Kolkata)").fill("2026-09");
+    await page.getByRole("button", { name: "Home — 🏠", exact: true }).first().click();
+    await page.getByText(TRANSLATIONS.en.noEarningsData, { exact: true }).waitFor();
+    assert.equal(await page.getByRole("button", { name: /: Expected/ }).count(), 0);
+    await page.getByRole("button", { name: /^My Money/ }).click();
+    await page.getByText(TRANSLATIONS.en.noShiftsFound, { exact: true }).first().waitFor();
+    assert.equal(await page.getByRole("button", { name: "View Pay Details", exact: true }).count(), 0);
   } finally { await browser.close(); }
 });

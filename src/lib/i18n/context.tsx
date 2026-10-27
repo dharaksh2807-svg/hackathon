@@ -5,7 +5,7 @@
 
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import React, { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 import { TRANSLATIONS, SUPPORTED_LANGUAGES, type LangCode, type TranslationKey } from "./translations";
 
 const STORAGE_KEY = "fairshift_lang";
@@ -33,11 +33,7 @@ function detectInitialLang(): LangCode {
 }
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<LangCode>("en");
-
-  useEffect(() => {
-    setLangState(detectInitialLang());
-  }, []);
+  const [lang, setLangState] = useState<LangCode>(detectInitialLang);
 
   const setLang = useCallback((newLang: LangCode) => {
     setLangState(newLang);

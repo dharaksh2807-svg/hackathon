@@ -7,7 +7,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { SUPPORTED_LANGUAGES, type LangCode } from "@/lib/i18n/translations";
+import type { LangCode } from "@/lib/i18n/translations";
 
 // BCP-47 language tags for SpeechSynthesis
 const LANG_TAGS: Record<LangCode, string[]> = {
@@ -29,20 +29,16 @@ function pickVoice(lang: LangCode): SpeechSynthesisVoice | null {
 }
 
 export function useVoice(lang: LangCode) {
-  const [supported, setSupported] = useState(false);
+  const [supported, setSupported] = useState(() => Boolean(pickVoice(lang)));
   const [playing, setPlaying] = useState(false);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !window.speechSynthesis) {
-      setSupported(false);
-      return;
-    }
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
     const checkVoices = () => {
       const voice = pickVoice(lang);
       setSupported(Boolean(voice));
     };
-    checkVoices();
     window.speechSynthesis.addEventListener("voiceschanged", checkVoices);
     return () => window.speechSynthesis.removeEventListener("voiceschanged", checkVoices);
   }, [lang]);

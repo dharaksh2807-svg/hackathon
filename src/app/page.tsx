@@ -7,6 +7,7 @@ import { WorkerOnboarding, useOnboarding } from "@/components/common/WorkerOnboa
 import { LanguageSelector } from "@/components/common/LanguageSelector";
 import { Navbar, type NavView } from "@/components/Navbar";
 import { PersonaSwitcher } from "@/components/PersonaSwitcher";
+import { InvitationGate } from "@/components/InvitationGate";
 import { SignIn } from "@/components/SignIn";
 import { IntroSection } from "@/components/IntroSection";
 import { WorkerHome } from "@/components/worker/WorkerHome";
@@ -16,7 +17,7 @@ import { DisputeList } from "@/components/disputes/DisputeList";
 import { SectorComparisonView } from "@/components/SectorComparisonView";
 import { ContractStatusView } from "@/components/ContractStatusView";
 import { LoadingSkeleton } from "@/components/common/LoadingSkeleton";
-import type { MeResponse, ResolveDisputeRequest, OrgWorker } from "@/lib/api-client/types";
+import type { MeResponse, ResolveDisputeRequest } from "@/lib/api-client/types";
 import { ApiError, HttpApiClient } from "@/lib/api-client/client";
 import { currentKolkataMonth, loadPortalData, portalIdentities, type PortalData } from "@/lib/api-client/portal";
 import { getBrowserAuth } from "@/lib/browser-auth";
@@ -35,7 +36,6 @@ function FairShiftApp() {
   const [month, setMonth] = useState(() => currentKolkataMonth());
   const [loaded, setLoaded] = useState<{ key: string; data: PortalData } | null>(null);
   const [apiError, setApiError] = useState<{ key: string; message: string } | null>(null);
-  const [workers, setWorkers] = useState<OrgWorker[]>([]);
 
   const requestVersion = useRef(0);
   const sessionVersion = useRef(0);
@@ -86,11 +86,6 @@ function FairShiftApp() {
   const loadData = useCallback(async () => {
     if (!currentPersona) return;
     const version = ++requestVersion.current;
-    if (currentPersona.role !== "WORKER") {
-      void client.listOrgWorkers({ orgId: currentPersona.organizationId }).then(res => {
-        if (version === requestVersion.current) setWorkers(res.data);
-      }).catch(() => {});
-    }
     return loadPortalData(client, currentPersona, month).then(data => {
       if (version === requestVersion.current) { setApiError(null); setLoaded({ key: scopeKey, data }); }
     }, error => {
@@ -230,7 +225,7 @@ function FairShiftApp() {
         onSignOut={signOut}
       />
 
-      <IntroSection />
+      {!isWorker && <IntroSection />}
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="flex flex-wrap items-center gap-3 mb-5 text-sm">
@@ -303,6 +298,7 @@ function FairShiftApp() {
                 </div>
 
                 <WorkerDashboard
+                  key={currentView}
                   persona={currentPersona}
                   shifts={data.shifts}
                   disputes={data.disputes}
@@ -365,7 +361,7 @@ function FairShiftApp() {
                 shifts={data.shifts}
                 disputes={data.disputes}
                 dashboardData={data.dashboard}
-                workers={workers}
+                workers={data.workers}
                 onSetRecordedPay={(id, amount) => mutate(() => client.setRecordedPay(id, amount))}
                 onResolveDispute={handleResolveDispute}
                 onAddWorker={handleAddWorker}
@@ -464,10 +460,12 @@ function FairShiftApp() {
 
 export default function Home() {
   return (
-    <I18nProvider>
-      <ToastProvider>
-        <FairShiftApp />
-      </ToastProvider>
-    </I18nProvider>
+    <InvitationGate>
+      <I18nProvider>
+        <ToastProvider>
+          <FairShiftApp />
+        </ToastProvider>
+      </I18nProvider>
+    </InvitationGate>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n/context";
 import { LanguageSelector } from "./LanguageSelector";
 
@@ -151,16 +151,14 @@ export function WorkerOnboarding({ onComplete }: WorkerOnboardingProps) {
 }
 
 export function useOnboarding() {
-  const [showOnboarding, setShowOnboarding] = useState(false);
-
-  useEffect(() => {
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    if (typeof window === "undefined") return false;
     try {
-      const done = localStorage.getItem(STORAGE_KEY);
-      if (!done) setShowOnboarding(true);
+      return !localStorage.getItem(STORAGE_KEY);
     } catch {
-      // If storage fails, don't show onboarding to avoid blocking the app
+      return false;
     }
-  }, []);
+  });
 
   const completeOnboarding = () => setShowOnboarding(false);
 

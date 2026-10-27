@@ -23,20 +23,11 @@ export function ResolveDisputeModal({
 }: ResolveDisputeModalProps) {
   const [decision, setDecision] = useState<"APPROVED" | "REJECTED">("APPROVED");
   const [explanation, setExplanation] = useState("");
-  const [rupeesInput, setRupeesInput] = useState("");
+  const [rupeesInput, setRupeesInput] = useState(() => shift?.earnings ? paiseToRupees(shift.earnings.expectedMinor) : shift?.recordedAmountMinor != null ? paiseToRupees(shift.recordedAmountMinor) : "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Set default suggested corrected amount to expected pay
-  React.useEffect(() => {
-    if (shift && shift.earnings) {
-      setRupeesInput(paiseToRupees(shift.earnings.expectedMinor));
-    } else if (shift && shift.recordedAmountMinor !== null) {
-      setRupeesInput(paiseToRupees(shift.recordedAmountMinor));
-    }
-  }, [shift]);
-
-  if (!dispute || !shift) return null;
+  if (!dispute) return null;
 
   const charCount = explanation.trim().length;
   const isExplanationValid = charCount >= 10 && charCount <= 2000;
@@ -89,24 +80,26 @@ export function ResolveDisputeModal({
       isOpen={isOpen}
       onClose={onClose}
       title="Adjudicate Wage Dispute"
-      description={`Case #${dispute.id.slice(0, 8)}… — ${shift.siteLabel}`}
+      description={`Case #${dispute.id.slice(0, 8)}… — ${shift?.siteLabel ?? dispute.shiftId}`}
       maxWidth="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Worker's claim box */}
         <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-1.5">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="font-semibold uppercase tracking-wider text-slate-700">Worker's Claim</span>
+            <span className="font-semibold uppercase tracking-wider text-slate-700">Worker&apos;s Claim</span>
             <span>{formatDateTimeKolkata(dispute.createdAt)}</span>
           </div>
           <div className="font-medium text-slate-900 text-xs sm:text-sm bg-white p-2.5 rounded border border-slate-200">
             &ldquo;{dispute.reason}&rdquo;
           </div>
           <div className="flex items-center justify-between pt-1 text-slate-600">
-            <span>Statutory Expected: {shift.earnings ? formatPaise(shift.earnings.expectedMinor) : "—"}</span>
-            <span>Recorded Pay: {shift.recordedAmountMinor !== null ? formatPaise(shift.recordedAmountMinor) : "None"}</span>
+            <span>Configured Expected: {shift?.earnings ? formatPaise(shift.earnings.expectedMinor) : "—"}</span>
+            <span>Recorded Pay: {shift && shift.recordedAmountMinor !== null ? formatPaise(shift.recordedAmountMinor) : "Unavailable"}</span>
           </div>
         </div>
+
+        {!shift && <p className="text-xs text-slate-600">Shift earnings are unavailable here. Enter the corrected amount to approve. Resolution requires existing recorded pay.</p>}
 
         {/* Decision Radio Choice */}
         <div>
@@ -169,12 +162,13 @@ export function ResolveDisputeModal({
               Corrected Recorded Pay (INR ₹) <span className="text-rose-600">*</span>
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-2 text-slate-400 font-bold text-sm">₹</span>
+              <span className="absolute left-3 top-2 text-slate-500 font-bold text-sm">₹</span>
               <input
                 id="corrected-amount"
                 type="number"
                 step="0.01"
                 min="0"
+                max="21474836.47"
                 value={rupeesInput}
                 onChange={(e) => setRupeesInput(e.target.value)}
                 className="w-full pl-8 pr-3 py-1.5 text-sm border border-emerald-300 rounded-lg focus-visible:outline-emerald-600 font-mono bg-white"
@@ -194,12 +188,14 @@ export function ResolveDisputeModal({
           </label>
           <textarea
             id="resolve-explanation"
+            aria-invalid={explanation.length > 0 && !isExplanationValid}
+            aria-describedby="resolve-help"
             rows={3}
             value={explanation}
             onChange={(e) => setExplanation(e.target.value)}
             placeholder={
               decision === "APPROVED"
-                ? "e.g., Verified gate biometric logs and approved 30m overtime + site hazard allowance."
+                ? "e.g., Reviewed attendance and approved the missing overtime and site allowance."
                 : "e.g., Attendance records and shift sign-in match the paid hours under the agreed contract."
             }
             className={`w-full p-2.5 text-xs sm:text-sm border rounded-lg focus-visible:outline-blue-600 ${
@@ -208,16 +204,16 @@ export function ResolveDisputeModal({
             required
             maxLength={2000}
           />
-          <div className="flex justify-between items-center text-xs text-slate-500 mt-1">
-            <span className={charCount < 10 ? "text-amber-600 font-medium" : "text-slate-500"}>
+          <div id="resolve-help" className="flex justify-between items-center text-xs text-slate-500 mt-1">
+            <span className={charCount < 10 ? "text-amber-800 font-medium" : "text-slate-500"}>
               {charCount < 10 ? `Minimum 10 characters required (${10 - charCount} more needed)` : `${charCount} / 2000 characters`}
             </span>
-            <span className="text-slate-400">Recorded permanently in audit trail</span>
+            <span className="text-slate-500">Recorded permanently in audit trail</span>
           </div>
         </div>
 
         {error && (
-          <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800">
+          <div role="alert" className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800">
             {error}
           </div>
         )}
@@ -241,7 +237,7 @@ export function ResolveDisputeModal({
             {isSubmitting
               ? "Recording Adjudication..."
               : decision === "APPROVED"
-              ? "Confirm & Disburse Adjustment"
+              ? "Confirm & Save Adjustment"
               : "Confirm Rejection"}
           </button>
         </div>

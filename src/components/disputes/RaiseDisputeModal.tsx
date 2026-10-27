@@ -82,6 +82,8 @@ export function RaiseDisputeModal({ shift, isOpen, onClose, onSubmit }: RaiseDis
           </label>
           <textarea
             id="dispute-reason"
+            aria-invalid={reason.length > 0 && !isValid}
+            aria-describedby={error ? "dispute-help dispute-error" : "dispute-help"}
             rows={4}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
@@ -92,17 +94,18 @@ export function RaiseDisputeModal({ shift, isOpen, onClose, onSubmit }: RaiseDis
             required
             maxLength={1000}
           />
-          <div className="flex items-center justify-between text-xs mt-1">
-            <span className={charCount < 10 ? "text-amber-600 font-medium" : "text-slate-500"}>
+          <div id="dispute-help" className="flex items-center justify-between text-xs mt-1">
+            <span className={charCount < 10 ? "text-amber-800 font-medium" : "text-slate-500"}>
               {charCount < 10
                 ? t("errorMinChars")
                 : `${charCount} / 1000 ${t("validCharsRemaining")}`}
             </span>
+
           </div>
         </div>
 
         {error && (
-          <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800">
+          <div id="dispute-error" role="alert" className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800">
             {error}
           </div>
         )}

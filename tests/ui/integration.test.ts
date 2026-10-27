@@ -111,6 +111,7 @@ test("each employer loads its real dashboard route without calling worker-only s
   t.mock.method(globalThis, "fetch", async (path: string) => {
     const url = new URL(path, "http://localhost"); calls.push(url);
     assert.notEqual(url.pathname, "/api/worker/shifts");
+    if (url.pathname === "/api/employer/workers") return Response.json({ data: [] });
     if (url.pathname === "/api/disputes") return Response.json({ data: [], paging: { limit: 100, offset: 0, nextOffset: null } });
     const sector = url.searchParams.get("sector") === "construction" ? "construction" : "campus";
     return Response.json({ data: getFixtureEmployerDashboard(sector) });
@@ -121,10 +122,21 @@ test("each employer loads its real dashboard route without calling worker-only s
     assert.deepEqual(result.shifts, result.dashboard?.recentShifts);
     assert.equal(result.earnings, null);
   }
-  assert.equal(calls.length, 4);
+  assert.equal(calls.length, 6);
 });
 
 test("reporting month follows Kolkata at UTC month and year boundaries", () => {
   assert.equal(currentKolkataMonth(new Date("2026-10-31T19:00:00Z")), "2026-11");
   assert.equal(currentKolkataMonth(new Date("2026-12-31T19:00:00Z")), "2027-01");
+});
+
+
+test("a failed employer roster request fails loading instead of showing stale workers", async t => {
+  const identity = portalIdentities(me).find(i => i.role === "EMPLOYER")!;
+  t.mock.method(globalThis, "fetch", async (path: string) => {
+    if (path.startsWith("/api/employer/workers")) return Response.json({ error: { code: "FORBIDDEN", message: "Organization access denied" } }, { status: 403 });
+    if (path.startsWith("/api/disputes")) return Response.json({ data: [], paging: { limit: 100, offset: 0, nextOffset: null } });
+    return Response.json({ data: getFixtureEmployerDashboard(identity.sector) });
+  });
+  await assert.rejects(() => loadPortalData(new HttpApiClient(), identity, "2026-10"), (error: unknown) => error instanceof ApiError && error.status === 403);
 });

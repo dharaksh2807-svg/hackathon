@@ -29,7 +29,7 @@ export function Navbar({
   return (
     <header className="bg-slate-900 border-b border-slate-800 text-white sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between min-h-16 sm:h-16 py-3 sm:py-0 gap-3">
           {/* Logo */}
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-black text-white text-base tracking-wider shadow-sm">
@@ -39,7 +39,7 @@ export function Navbar({
               <div className="font-bold text-base text-white tracking-tight flex items-center gap-2">
                 <span>{t("appName")}</span>
                 <span className="text-[10px] font-mono bg-blue-950 text-blue-300 border border-blue-800 px-1.5 py-0.5 rounded">
-                  v1.0 API
+                  v1.0
                 </span>
               </div>
               <div className="text-[11px] text-slate-400 hidden sm:block">

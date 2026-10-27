@@ -1,5 +1,5 @@
 import type { FairShiftApiClient } from "./client.ts";
-import type { DashboardResponse, Dispute, EarningsResponse, MeResponse, PortalIdentity, Shift } from "./types.ts";
+import type { DashboardResponse, Dispute, EarningsResponse, MeResponse, PortalIdentity, OrgWorker, Shift } from "./types.ts";
 
 /** Only memberships returned by the verified /api/me session become portal identities. */
 export function portalIdentities(me: MeResponse["data"]): PortalIdentity[] {
@@ -33,6 +33,7 @@ export interface PortalData {
   disputes: Dispute[];
   earnings: EarningsResponse["data"] | null;
   dashboard: DashboardResponse["data"] | null;
+  workers: OrgWorker[];
 }
 
 export async function loadPortalData(client: FairShiftApiClient, identity: PortalIdentity, month: string): Promise<PortalData> {
@@ -43,12 +44,12 @@ export async function loadPortalData(client: FairShiftApiClient, identity: Porta
       allPages(offset => client.getWorkerShifts({ orgId, limit: 100, offset })),
       client.getWorkerEarnings({ orgId, month }), disputesPromise,
     ]);
-    return { shifts, earnings: earnings.data, disputes, dashboard: null };
+    return { shifts, earnings: earnings.data, disputes, dashboard: null, workers: [] };
   }
   // The frozen contract exposes the month's twenty recent employer shifts.
   // Employers must never call the worker-only shifts endpoint.
-  const [dashboard, disputes] = await Promise.all([
-    client.getEmployerDashboard({ orgId, month, sector: identity.sector }), disputesPromise,
+  const [dashboard, disputes, workers] = await Promise.all([
+    client.getEmployerDashboard({ orgId, month, sector: identity.sector }), disputesPromise, client.listOrgWorkers({ orgId }),
   ]);
-  return { shifts: dashboard.data.recentShifts, dashboard: dashboard.data, disputes, earnings: null };
+  return { shifts: dashboard.data.recentShifts, dashboard: dashboard.data, disputes, earnings: null, workers: workers.data };
 }

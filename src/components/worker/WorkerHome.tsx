@@ -43,7 +43,7 @@ export function WorkerHome({
 
   const openDisputeCount = disputes.filter((d) => d.status === "OPEN").length;
   const missingMoneyCount = earnings?.underpaidCount ?? 0;
-  const effectiveShifts = shifts.length > 0 ? shifts : (earnings?.shifts ?? []);
+  const effectiveShifts = earnings?.shifts ?? shifts;
   // Compute total shortfall from shifts in the earnings response
   const totalShortfallMinor = (earnings?.shifts ?? [])
     .filter((s) => s.comparisonStatus === "UNDERPAID" && s.differenceMinor && s.differenceMinor > 0)
@@ -104,7 +104,7 @@ export function WorkerHome({
 
         {/* Quick money summary */}
         {earnings && (
-          <div className="mt-4 grid grid-cols-3 gap-3">
+          <div className="mt-4 grid grid-cols-1 min-[400px]:grid-cols-3 gap-3">
             <div className="bg-white/10 rounded-xl p-3 text-center">
               <div className="text-xs text-slate-400 mb-1">{t("moneyIShouldGet")}</div>
               <div className="text-base font-black text-emerald-300 leading-tight">

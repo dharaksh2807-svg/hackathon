@@ -24,6 +24,7 @@ export function AddWorkerModal({
   const [success, setSuccess] = useState(false);
 
   const handleClose = () => {
+    if (isSubmitting) return;
     setWorkerName("");
     setWorkerEmail("");
     setError(null);
@@ -57,10 +58,6 @@ export function AddWorkerModal({
     try {
       await onSubmit(name, email);
       setSuccess(true);
-      // Auto-close after a short success display
-      setTimeout(() => {
-        onClose();
-      }, 1800);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to add worker.";
       setError(msg);
@@ -74,7 +71,7 @@ export function AddWorkerModal({
       isOpen={isOpen}
       onClose={handleClose}
       title="Add Worker to Your Team"
-      description={`Invite a worker to join ${organizationName}. They will receive an email to set up their account.`}
+      description={`Invite a worker to join ${organizationName}. New accounts receive a setup email; existing accounts keep their sign-in.`}
       maxWidth="md"
     >
       {success ? (
@@ -84,13 +81,13 @@ export function AddWorkerModal({
             ✅
           </div>
           <div>
-            <p className="font-bold text-slate-900 text-base">Worker Invited!</p>
+            <p className="font-bold text-slate-900 text-base">Worker Added!</p>
             <p className="text-xs text-slate-600 mt-1">
-              An invitation email has been sent to{" "}
-              <strong className="text-slate-800">{workerEmail}</strong>. They can now set up
-              their FairShift account.
+              Your organization membership is ready for{" "}
+              <strong className="text-slate-800">{workerEmail}</strong>. New workers receive a setup email. Existing workers can use their current sign-in.
             </p>
           </div>
+          <button type="button" onClick={handleClose} className="rounded-lg bg-blue-600 text-white px-4 py-2 font-semibold">Done</button>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -156,7 +153,7 @@ export function AddWorkerModal({
 
           {/* Duplicate / API error */}
           {error && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800">
+            <div role="alert" className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800">
               {error}
             </div>
           )}

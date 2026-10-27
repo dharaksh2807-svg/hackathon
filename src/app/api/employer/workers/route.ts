@@ -12,25 +12,23 @@
  *  - Duplicate membership (same auth_user_id + org) is detected before insert.
  */
 import "server-only";
-import { type NextRequest } from "next/server";
+import { bodyInput, input, queryInput } from "@/server/http";
+import { ApiError } from "@/server/errors";
 import { requireMembership } from "@/server/auth";
 import { createPrivilegedClient } from "@/server/supabase";
 import { AccessError } from "@/server/auth";
-import { UuidSchema, AddWorkerRequestSchema } from "@/lib/contracts";
+import { OrganizationQuerySchema, AddWorkerRequestSchema } from "@/lib/contracts";
+
+const privateHeaders = { "Cache-Control": "private, no-store", "Vary": "Cookie" };
 
 function errResponse(code: string, message: string, status: number) {
-  return Response.json({ error: { code, message } }, { status });
+  return Response.json({ error: { code, message } }, { status, headers: privateHeaders });
 }
 
 /* ─── GET /api/employer/workers?orgId= ─── */
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   try {
-    const rawOrgId = request.nextUrl.searchParams.get("orgId");
-    const orgIdParsed = UuidSchema.safeParse(rawOrgId);
-    if (!orgIdParsed.success) {
-      return errResponse("VALIDATION_ERROR", "orgId must be a valid UUID", 400);
-    }
-    const orgId = orgIdParsed.data;
+    const { orgId } = input(OrganizationQuerySchema, queryInput(request));
 
     // Verify caller is an EMPLOYER in this org
     await requireMembership(orgId, "EMPLOYER");
@@ -64,8 +62,9 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    return Response.json({ data: workers });
+    return Response.json({ data: workers }, { headers: privateHeaders });
   } catch (e) {
+    if (e instanceof ApiError) return errResponse(e.code, e.message, e.status);
     if (e instanceof AccessError) {
       return errResponse(e.code, e.message, e.code === "UNAUTHENTICATED" ? 401 : 403);
     }
@@ -77,7 +76,7 @@ export async function GET(request: NextRequest) {
 /* ─── POST /api/employer/workers ─── */
 export async function POST(request: Request) {
   try {
-    const body = await request.json().catch(() => ({}));
+    const body = await bodyInput(request);
     const parsed = AddWorkerRequestSchema.safeParse(body);
     if (!parsed.success) {
       const msg = parsed.error.issues[0]?.message ?? "Invalid request body";
@@ -98,7 +97,7 @@ export async function POST(request: Request) {
 
     const { data: inviteData, error: inviteError } = await admin.auth.admin.inviteUserByEmail(
       workerEmail,
-      { data: { full_name: workerName } }
+      { data: { full_name: workerName }, redirectTo: process.env.FAIRSHIFT_APP_ORIGIN ?? new URL(request.url).origin }
     );
 
     if (!inviteError && inviteData?.user) {
@@ -106,21 +105,18 @@ export async function POST(request: Request) {
       isNewUser = true;
     } else {
       // User likely already exists; locate by email via admin listUsers.
-      const { data: listData, error: listError } = await admin.auth.admin.listUsers({
-        page: 1,
-        perPage: 1000,
-      });
-      if (listError) {
-        return errResponse("SERVER_ERROR", "Could not verify user account", 500);
+      let existing;
+      for (let page = 1; ; page++) {
+        const { data: listData, error: listError } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+        if (listError) return errResponse("SERVER_ERROR", "Could not verify user account", 503);
+        existing = listData.users.find(u => u.email?.toLowerCase() === workerEmail.toLowerCase());
+        if (existing || listData.users.length < 1000) break;
       }
-      const existing = listData.users.find(
-        (u) => u.email?.toLowerCase() === workerEmail.toLowerCase()
-      );
       if (!existing) {
         // Invite failed for a reason other than "already exists".
         return errResponse(
           "SERVER_ERROR",
-          inviteError?.message ?? "Failed to create worker account",
+          "Unable to send the worker invitation. Please retry later.",
           500
         );
       }
@@ -129,13 +125,14 @@ export async function POST(request: Request) {
     }
 
     // ③ Prevent duplicate membership (same auth_user_id in the same org).
-    const { data: duplicate } = await admin
+    const { data: duplicate, error: duplicateError } = await admin
       .from("worker_memberships")
       .select("id")
       .eq("organization_id", orgId)
       .eq("auth_user_id", authUserId)
       .maybeSingle();
 
+    if (duplicateError) return errResponse("SERVER_ERROR", "Could not verify organization membership", 503);
     if (duplicate) {
       return errResponse("CONFLICT", "This worker is already a member of your organization", 409);
     }
@@ -153,7 +150,7 @@ export async function POST(request: Request) {
       .single();
 
     if (insertError || !membership) {
-      console.error("[POST /api/employer/workers] insert error:", insertError);
+      if (insertError?.code === "23505") return errResponse("CONFLICT", "This worker is already a member of your organization", 409);
       return errResponse("SERVER_ERROR", "Failed to create worker membership", 500);
     }
 
@@ -167,9 +164,10 @@ export async function POST(request: Request) {
           isNewUser,
         },
       },
-      { status: 201 }
+      { status: 201, headers: privateHeaders }
     );
   } catch (e) {
+    if (e instanceof ApiError) return errResponse(e.code, e.message, e.status);
     if (e instanceof AccessError) {
       return errResponse(e.code, e.message, e.code === "UNAUTHENTICATED" ? 401 : 403);
     }

@@ -13,7 +13,7 @@ interface CheckOutModalProps {
 }
 
 export function CheckOutModal({ shift, isOpen, onClose, onSubmit }: CheckOutModalProps) {
-  const [breakMinutes, setBreakMinutes] = useState(30);
+  const [breakMinutes, setBreakMinutes] = useState("30");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,14 +21,15 @@ export function CheckOutModal({ shift, isOpen, onClose, onSubmit }: CheckOutModa
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (breakMinutes < 0 || breakMinutes > 1440) {
-      setError("Unpaid break minutes must be between 0 and 1,440.");
+    const minutes = Number(breakMinutes);
+    if (!breakMinutes.trim() || !Number.isInteger(minutes) || minutes < 0 || minutes > 1440) {
+      setError("Unpaid break must be a whole number of minutes between 0 and 1,440.");
       return;
     }
     setError(null);
     setIsSubmitting(true);
     try {
-      await onSubmit(shift.id, breakMinutes);
+      await onSubmit(shift.id, minutes);
       onClose();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to record checkout.");
@@ -67,21 +68,23 @@ export function CheckOutModal({ shift, isOpen, onClose, onSubmit }: CheckOutModa
               type="number"
               min={0}
               max={1440}
-              step={5}
+              step={1}
               value={breakMinutes}
-              onChange={(e) => setBreakMinutes(parseInt(e.target.value, 10) || 0)}
+              onChange={(e) => { setBreakMinutes(e.target.value); setError(null); }}
+              aria-invalid={Boolean(error)}
+              aria-describedby={error ? "checkout-help checkout-error" : "checkout-help"}
               className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus-visible:outline-blue-600"
               required
             />
             <span className="text-xs text-slate-500 font-medium whitespace-nowrap">Minutes</span>
           </div>
-          <p className="mt-1 text-xs text-slate-500">
+          <p id="checkout-help" className="mt-1 text-xs text-slate-500">
             Standard lunch or meal pauses are deducted from payable hours.
           </p>
         </div>
 
         {error && (
-          <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800">
+          <div id="checkout-error" role="alert" className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800">
             {error}
           </div>
         )}

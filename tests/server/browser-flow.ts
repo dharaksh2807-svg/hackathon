@@ -32,6 +32,7 @@ export async function verifyBrowserFlows(options: {
       ]));
       assert.equal((await recordPay(employer, shiftId, recorded)).status, 200);
       const context = await browser.newContext();
+      await context.addInitScript(() => { localStorage.setItem("fairshift_onboarding_done", "1"); localStorage.setItem("fairshift_lang", "en"); });
       const page = await context.newPage();
       page.setDefaultTimeout(45_000);
       const errors: string[] = [];
@@ -41,23 +42,24 @@ export async function verifyBrowserFlows(options: {
         await page.getByLabel("Email", { exact: true }).fill(`fairshift-live-${marker}-${account}@example.test`);
         await page.getByLabel("Password", { exact: true }).fill(password);
         await page.getByRole("button", { name: "Sign in", exact: true }).click();
-        await page.getByRole("button", { name: portal, exact: true }).waitFor();
+        if (portal === "Worker Portal") await page.getByRole("button", { name: /^My Work/ }).click();
+        else await page.getByRole("button", { name: portal, exact: true }).waitFor();
         await page.getByLabel("Reporting month (Asia/Kolkata)").fill("2026-10");
       };
       await signIn(worker, "Worker Portal");
       const card = page.locator("div.bg-white.rounded-xl").filter({ has: page.getByRole("heading", { name: site, exact: true }) });
-      await card.getByText("UNDERPAID", { exact: true }).waitFor();
+      await card.getByText(/Missing Money/).first().waitFor();
       await card.getByText(sector === "construction" ? "₹1,100.00" : "₹700.00", { exact: true }).waitFor();
 
       // Check-in must use the actual backend; only the elapsed test duration is aged
       // through the trusted fixture client, never through a browser timestamp field.
       const attendance = page.locator("div.bg-white.rounded-xl").filter({ has: page.getByRole("heading", { name: plannedSite, exact: true }) });
       const checkin = page.waitForResponse((response: { url(): string; request(): { method(): string } }) => response.url().includes(`${plannedId}/check-in`) && response.request().method() === "POST");
-      await attendance.getByRole("button", { name: "Check In Now" }).click();
+      await attendance.getByRole("button", { name: /Check In/ }).click();
       assert.equal((await checkin).status(), 200);
-      await attendance.getByRole("button", { name: "Record Check Out" }).waitFor();
+      await attendance.getByRole("button", { name: /Check Out/ }).waitFor();
       checked(await admin.from("shifts").update({ checked_in_at: new Date(Date.now() - 120_000).toISOString() }).eq("id", plannedId));
-      await attendance.getByRole("button", { name: "Record Check Out" }).click();
+      await attendance.getByRole("button", { name: /Check Out/ }).click();
       await page.getByRole("dialog").getByRole("spinbutton").fill("0");
       const checkout = page.waitForResponse((response: { url(): string; request(): { method(): string } }) => response.url().includes(`${plannedId}/check-out`) && response.request().method() === "POST");
       await page.getByRole("dialog").getByRole("button", { name: /Confirm/ }).click();
@@ -65,10 +67,10 @@ export async function verifyBrowserFlows(options: {
       await page.getByRole("dialog").waitFor({ state: "hidden" });
 
       const reason = `Browser review ${sector}: missing sector allowance.`;
-      await card.getByRole("button", { name: "Raise Dispute", exact: true }).click();
-      await page.getByLabel("Reason for Dispute").fill(reason);
+      await card.getByRole("button", { name: /Report Missing Money/ }).click();
+      await page.getByLabel("What is the problem?").fill(reason);
       const creation = page.waitForResponse((response: { url(): string; request(): { method(): string } }) => response.url().endsWith("/api/disputes") && response.request().method() === "POST");
-      await page.getByRole("button", { name: "Submit Formal Dispute" }).click();
+      await page.getByRole("button", { name: "Submit Complaint" }).click();
       const response = await creation;
       assert.equal(response.status(), 201);
       const dispute = DisputeResponseSchema.parse(await response.json()).data;
@@ -89,7 +91,7 @@ export async function verifyBrowserFlows(options: {
       await page.getByRole("button", { name: "Sign out", exact: true }).click();
       await page.getByLabel("Email", { exact: true }).waitFor();
       await signIn(worker, "Worker Portal");
-      await page.getByRole("button", { name: /^Disputes/ }).click();
+      await page.getByRole("button", { name: "Complaints", exact: true }).first().click();
       const workerCase = page.locator("div.bg-white.p-5").filter({ hasText: reason });
       await workerCase.getByText("Approved & Adjusted", { exact: true }).waitFor();
       await workerCase.getByText(note, { exact: true }).waitFor();

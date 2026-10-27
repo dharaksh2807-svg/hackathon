@@ -25,11 +25,12 @@ export function formatPaiseCompact(paise: number | null | undefined): string {
 }
 
 export function rupeesToPaise(rupeesInput: number | string): number {
-  const numeric = typeof rupeesInput === "string" ? parseFloat(rupeesInput.trim()) : rupeesInput;
-  if (!Number.isFinite(numeric) || numeric < 0) {
-    throw new RangeError("Invalid rupees amount");
-  }
-  return Math.round(numeric * 100);
+  const text = String(rupeesInput).trim();
+  if (!/^\d+(?:\.\d{1,2})?$/.test(text)) throw new RangeError("Enter a nonnegative rupee amount with at most two decimal places");
+  const [whole, fraction = ""] = text.split(".");
+  const minor = BigInt(whole) * 100n + BigInt(fraction.padEnd(2, "0"));
+  if (minor > 2_147_483_647n) throw new RangeError("Amount exceeds the supported maximum");
+  return Number(minor);
 }
 
 export function paiseToRupees(paise: number | null | undefined): string {
@@ -67,7 +68,7 @@ export function formatDiscrepancy(
       formattedAmount: "₹0.00",
       badgeLabel: "Pay Matched",
       badgeVariant: "matched",
-      description: "Recorded earnings precisely match statutory and rule calculations.",
+      description: "Recorded earnings precisely match configured and rule calculations.",
       paise: 0,
     };
   }
@@ -77,7 +78,7 @@ export function formatDiscrepancy(
       formattedAmount: `Shortfall: ${formatPaise(differenceMinor)}`,
       badgeLabel: `Underpaid by ${formatPaise(differenceMinor)}`,
       badgeVariant: "underpaid",
-      description: `Worker is owed ${formatPaise(differenceMinor)} (${differenceMinor.toLocaleString()} paise) above the recorded amount.`,
+      description: `Expected pay exceeds the recorded amount by ${formatPaise(differenceMinor)} (${differenceMinor.toLocaleString()} paise).`,
       paise: differenceMinor,
     };
   }
@@ -88,7 +89,7 @@ export function formatDiscrepancy(
     formattedAmount: `Surplus: ${formatPaise(surplus)}`,
     badgeLabel: `Overpaid by ${formatPaise(surplus)}`,
     badgeVariant: "overpaid",
-    description: `Employer recorded ${formatPaise(surplus)} more than statutory shift expectation.`,
+    description: `Employer recorded ${formatPaise(surplus)} more than configured shift expectation.`,
     paise: differenceMinor,
   };
 }
