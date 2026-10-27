@@ -21,6 +21,36 @@ test("successful HTTP responses must match the frozen runtime schema", async t =
   await assert.rejects(() => new HttpApiClient().getMe(), (error: unknown) => error instanceof ApiError && error.code === "INVALID_RESPONSE");
 });
 
+test("HTTP errors preserve validated error details and request IDs", async t => {
+  t.mock.method(globalThis, "fetch", async () => Response.json({
+    error: { code: "CONFLICT", message: "Concurrent change; refresh and retry", requestId: "request-123" },
+  }, { status: 409 }));
+  await assert.rejects(() => new HttpApiClient().getMe(), (error: unknown) =>
+    error instanceof ApiError && error.status === 409 && error.code === "CONFLICT" &&
+    error.message === "Concurrent change; refresh and retry" && error.requestId === "request-123");
+});
+
+test("malformed HTTP error bodies use safe fallbacks and preserve HTTP status", async t => {
+  const bodies: unknown[] = [
+    { error: { code: { unexpected: true }, message: ["Invalid details"], requestId: 123 } },
+    { error: { code: "UNAUTHENTICATED", message: { unexpected: true } } },
+    null,
+  ];
+  for (const body of bodies) {
+    t.mock.method(globalThis, "fetch", async () => Response.json(body, { status: 401 }));
+    await assert.rejects(() => new HttpApiClient().getMe(), (error: unknown) =>
+      error instanceof ApiError && error.status === 401 && error.code === "SERVER_ERROR" &&
+      error.message === "Request failed with status 401" && error.requestId === undefined);
+  }
+});
+
+test("non-JSON HTTP errors retain status and the not-found fallback", async t => {
+  t.mock.method(globalThis, "fetch", async () => new Response("Not found", { status: 404 }));
+  await assert.rejects(() => new HttpApiClient().getMe(), (error: unknown) =>
+    error instanceof ApiError && error.status === 404 && error.code === "NOT_FOUND" &&
+    error.message === "Request failed with status 404");
+});
+
 test("HTTP writes use frozen routes, methods, integer paise and session credentials", async t => {
   const calls: { path: string; options: RequestInit }[] = [];
   t.mock.method(globalThis, "fetch", async (url: string, options: RequestInit) => {

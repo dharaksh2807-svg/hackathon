@@ -2,8 +2,6 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   formatDateTimeKolkata,
-  formatDateOnlyKolkata,
-  formatTimeOnlyKolkata,
   formatMinutes,
   isLocalWeekend,
 } from "../../src/lib/api-client/formatters.ts";

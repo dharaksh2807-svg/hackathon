@@ -21,6 +21,7 @@ import type {
 } from "./types.ts";
 
 import {
+  ErrorResponseSchema,
   MeResponseSchema,
   ShiftsResponseSchema,
   ShiftResponseSchema,
@@ -85,10 +86,11 @@ export class HttpApiClient implements FairShiftApiClient {
         cache: "no-store",
       });
 
-      const json = await res.json().catch(() => null);
+      const json: unknown = await res.json().catch(() => null);
 
       if (!res.ok) {
-        const error = json?.error;
+        const parsedError = ErrorResponseSchema.safeParse(json);
+        const error = parsedError.success ? parsedError.data.error : undefined;
         throw new ApiError(
           error?.code || (res.status === 404 ? "NOT_FOUND" : "SERVER_ERROR"),
           error?.message || `Request failed with status ${res.status}`,
