@@ -66,6 +66,22 @@ test("Postgres migration, persistence and transactional workflow", { skip: !driv
       await assert.rejects(() => call("fairshift_record_pay", [ce, shift, 0]), /permission denied/);
       await db.exec("RESET ROLE");
     });
+    await t.test("anonymous and end-user roles cannot execute any privileged mutation or edit disputes directly", async () => {
+      for (const role of ["anon", "authenticated"]) {
+        await db.exec(`SET ROLE ${role}`);
+        await sql("SELECT set_config('request.jwt.claim.sub',$1,false)", [other]);
+        for (const [name, args] of [
+          ["fairshift_check_in", [cw, planned]], ["fairshift_check_out", [cw, planned, 0]],
+          ["fairshift_create_dispute", [cw, shift, "Unauthorized synthetic claim"]],
+          ["fairshift_record_pay", [ce, shift, 1]],
+          ["fairshift_resolve_dispute", [ce, dispute, "REJECTED", "Unauthorized synthetic decision", null]],
+        ] as [string, unknown[]][]) await assert.rejects(() => call(name, args), /permission denied/);
+        await assert.rejects(() => sql("UPDATE public.disputes SET reason='Unauthorized synthetic edit' WHERE id=$1", [dispute]), /permission denied/);
+        await db.exec("RESET ROLE");
+      }
+      await assert.rejects(() => call("fairshift_resolve_dispute", [cw, dispute, "REJECTED", "Worker cannot resolve a dispute", null]), /FORBIDDEN/);
+      assert.equal((await sql("SELECT status FROM public.disputes WHERE id=$1", [dispute]))[0].status, "OPEN");
+    });
     await t.test("attendance uses database time, rejects duplicates and invalid checkout, and snapshots rules", async () => {
       await assert.rejects(() => call("fairshift_check_out", [cw, planned, 0]), /INVALID_STATE/);
       await assert.rejects(() => call("fairshift_record_pay", [ce, planned, 0]), /INVALID_STATE/);

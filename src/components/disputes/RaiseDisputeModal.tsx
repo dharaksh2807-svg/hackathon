@@ -54,7 +54,7 @@ export function RaiseDisputeModal({ shift, isOpen, onClose, onSubmit }: RaiseDis
         {/* Pay Summary Callout */}
         <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-lg text-xs space-y-1.5 text-slate-800">
           <div className="flex justify-between items-center">
-            <span className="text-slate-600">Expected Statutory Pay:</span>
+            <span className="text-slate-600">Expected Configured Pay:</span>
             <span className="font-semibold text-emerald-800">
               {shift.earnings ? formatPaise(shift.earnings.expectedMinor) : "—"}
             </span>
@@ -80,6 +80,8 @@ export function RaiseDisputeModal({ shift, isOpen, onClose, onSubmit }: RaiseDis
           </label>
           <textarea
             id="dispute-reason"
+            aria-invalid={reason.length > 0 && !isValid}
+            aria-describedby={error ? "dispute-help dispute-error" : "dispute-help"}
             rows={4}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
@@ -90,18 +92,18 @@ export function RaiseDisputeModal({ shift, isOpen, onClose, onSubmit }: RaiseDis
             required
             maxLength={1000}
           />
-          <div className="flex items-center justify-between text-xs mt-1">
-            <span className={charCount < 10 ? "text-amber-600 font-medium" : "text-slate-500"}>
+          <div id="dispute-help" className="flex items-center justify-between text-xs mt-1">
+            <span className={charCount < 10 ? "text-amber-800 font-medium" : "text-slate-500"}>
               {charCount < 10
                 ? `Minimum 10 characters required (${10 - charCount} more needed)`
                 : `${charCount} / 1000 characters`}
             </span>
-            <span className="text-slate-400">Strict contract validation</span>
+            <span className="text-slate-500">Strict contract validation</span>
           </div>
         </div>
 
         {error && (
-          <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800">
+          <div id="dispute-error" role="alert" className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800">
             {error}
           </div>
         )}
@@ -118,7 +120,7 @@ export function RaiseDisputeModal({ shift, isOpen, onClose, onSubmit }: RaiseDis
           <button
             type="submit"
             disabled={!isValid || isSubmitting}
-            className="px-4 py-2 text-xs font-semibold text-white bg-amber-600 rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 text-xs font-semibold text-white bg-amber-800 rounded-lg hover:bg-amber-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isSubmitting ? "Submitting Dispute..." : "Submit Formal Dispute"}
           </button>

@@ -35,7 +35,7 @@ export function DisputeDetailModal({
       maxWidth="lg"
       footer={
         <div className="flex items-center justify-between w-full">
-          <span className="text-xs text-slate-400 font-mono">
+          <span className="text-xs text-slate-500 font-mono">
             Status: {dispute.status}
           </span>
           <div className="flex items-center gap-2">

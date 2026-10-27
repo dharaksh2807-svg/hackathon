@@ -59,10 +59,10 @@ export function RecordPayModal({ shift, isOpen, onClose, onSubmit }: RecordPayMo
       maxWidth="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Statutory Expectation Callout */}
+        {/* Configured Expectation Callout */}
         <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-1.5">
           <div className="flex justify-between items-center">
-            <span className="text-slate-600">Statutory Expected Pay:</span>
+            <span className="text-slate-600">Configured Expected Pay:</span>
             <span className="font-semibold text-emerald-800 text-sm">
               {formatPaise(expectedPaise)}
             </span>
@@ -83,13 +83,15 @@ export function RecordPayModal({ shift, isOpen, onClose, onSubmit }: RecordPayMo
             Employer Recorded Amount (INR ₹) <span className="text-rose-600">*</span>
           </label>
           <div className="relative">
-            <span className="absolute left-3 top-2.5 text-slate-400 font-bold text-sm">₹</span>
+            <span className="absolute left-3 top-2.5 text-slate-500 font-bold text-sm">₹</span>
             <input
               id="recorded-amount"
               type="number"
               step="0.01"
               min="0"
-              max="21474836"
+              max="21474836.47"
+              aria-invalid={rupeesInput.length > 0 && enteredPaise === null}
+              aria-describedby={error ? "recorded-help recorded-error" : "recorded-help"}
               value={rupeesInput}
               onChange={(e) => setRupeesInput(e.target.value)}
               className="w-full pl-8 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus-visible:outline-blue-600 font-mono"
@@ -97,6 +99,7 @@ export function RecordPayModal({ shift, isOpen, onClose, onSubmit }: RecordPayMo
               required
             />
           </div>
+          <p id="recorded-help" className="mt-1 text-xs text-slate-600">Enter 0 through 21,474,836.47 rupees, with at most two decimal places.</p>
           <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
             <span>
               Integer paise equivalent:{" "}
@@ -104,7 +107,7 @@ export function RecordPayModal({ shift, isOpen, onClose, onSubmit }: RecordPayMo
                 {enteredPaise !== null ? `${enteredPaise.toLocaleString()} paise` : "—"}
               </strong>
             </span>
-            <span className="text-slate-400">Strict contract standard</span>
+            <span className="text-slate-500">Strict contract standard</span>
           </div>
         </div>
 
@@ -133,14 +136,14 @@ export function RecordPayModal({ shift, isOpen, onClose, onSubmit }: RecordPayMo
               {differencePaise === 0
                 ? "The worker will see a balanced green indicator."
                 : differencePaise > 0
-                ? "This amount is below the statutory calculation and will trigger an UNDERPAID alert for the worker."
-                : "Recorded amount exceeds the statutory calculation."}
+                ? "This amount is below the configured calculation and will trigger an UNDERPAID alert for the worker."
+                : "Recorded amount exceeds the configured calculation."}
             </p>
           </div>
         )}
 
         {error && (
-          <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800">
+          <div id="recorded-error" role="alert" className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800">
             {error}
           </div>
         )}

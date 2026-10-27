@@ -68,7 +68,7 @@ export function formatDiscrepancy(
       formattedAmount: "₹0.00",
       badgeLabel: "Pay Matched",
       badgeVariant: "matched",
-      description: "Recorded earnings precisely match statutory and rule calculations.",
+      description: "Recorded earnings precisely match configured and rule calculations.",
       paise: 0,
     };
   }
@@ -78,7 +78,7 @@ export function formatDiscrepancy(
       formattedAmount: `Shortfall: ${formatPaise(differenceMinor)}`,
       badgeLabel: `Underpaid by ${formatPaise(differenceMinor)}`,
       badgeVariant: "underpaid",
-      description: `Worker is owed ${formatPaise(differenceMinor)} (${differenceMinor.toLocaleString()} paise) above the recorded amount.`,
+      description: `Expected pay exceeds the recorded amount by ${formatPaise(differenceMinor)} (${differenceMinor.toLocaleString()} paise).`,
       paise: differenceMinor,
     };
   }
@@ -89,7 +89,7 @@ export function formatDiscrepancy(
     formattedAmount: `Surplus: ${formatPaise(surplus)}`,
     badgeLabel: `Overpaid by ${formatPaise(surplus)}`,
     badgeVariant: "overpaid",
-    description: `Employer recorded ${formatPaise(surplus)} more than statutory shift expectation.`,
+    description: `Employer recorded ${formatPaise(surplus)} more than configured shift expectation.`,
     paise: differenceMinor,
   };
 }

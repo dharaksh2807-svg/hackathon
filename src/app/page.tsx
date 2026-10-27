@@ -99,7 +99,16 @@ function FairShiftApp() {
   };
 
   async function mutate(action: () => Promise<unknown>) {
-    await action();
+    try { await action(); }
+    catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        ++requestVersion.current;
+        setLoaded(null);
+        setMe(null);
+        setNeedsSignIn(true);
+      }
+      throw error;
+    }
     try { await loadData(); }
     catch { throw new Error("Your change was saved, but updated records could not be loaded. Retry loading before making another change."); }
   }
@@ -123,7 +132,7 @@ function FairShiftApp() {
       <PersonaSwitcher currentPersona={currentPersona} identities={identities} onSelectPersona={identity => { setLoaded(null); setSelectedId(identity.id); }} onSignOut={signOut} />
       <IntroSection />
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <div className="flex items-center gap-3 mb-5 text-sm">
+        <div className="flex flex-wrap items-center gap-3 mb-5 text-sm">
           <label htmlFor="report-month">Reporting month (Asia/Kolkata)</label>
           <input id="report-month" type="month" value={month} onChange={event => { if (/^\d{4}-(0[1-9]|1[0-2])$/.test(event.target.value)) { setLoaded(null); setMonth(event.target.value); } }} className="border rounded-lg p-2" />
           <button className="border rounded-lg p-2" onClick={() => void loadData().catch(() => {})}>Refresh records</button>

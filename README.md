@@ -53,3 +53,13 @@ The browser test uses real sign-in and API calls. Its trusted fixture client age
 The frozen employer dashboard exposes at most 20 recent shifts for the selected month; the UI labels this limit and uses full server aggregates. Disputes are fetched across all pages and can be resolved even when their shift is outside that recent list. No new list/detail API has been added.
 
 Source provenance, verification evidence, remaining limitations, and the exact changed-file list are in [the integration report](docs/INTEGRATION_REPORT.md).
+
+## Pre-submission audit
+
+See [the audit report](docs/AUDIT_REPORT.md) for reproduced defects, fixes, exact checks, and deployment blockers. The focused browser regressions require a running local app and the existing external Playwright driver:
+
+```sh
+FAIRSHIFT_BROWSER_URL=http://127.0.0.1:3000 FAIRSHIFT_PLAYWRIGHT_MODULE=/tmp/fairshift-integration-tools/node_modules/playwright/index.mjs node --experimental-strip-types --test tests/browser/audit.test.ts
+```
+
+Those regressions use explicitly intercepted synthetic HTTP responses to test UI behavior and accessibility. Use the separate live suite above for real Supabase Auth, persistence and sector workflow verification.

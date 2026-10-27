@@ -20,6 +20,12 @@ test("live Supabase Auth identities, HTTP authorization/isolation and concurrent
   const secret = process.env.SUPABASE_SERVICE_ROLE_KEY;
   assert.ok(url && key && secret, "All three Supabase environment variables are required");
   const admin = createClient(url, secret, { auth: { persistSession: false, autoRefreshToken: false } });
+  // Fail before creating Auth users if the external schema is not ready.
+  const prerequisites = await Promise.all(["organizations", "sector_configs", "worker_memberships", "shifts", "recorded_pay", "disputes", "dispute_history"].map(async table => {
+    const { error } = await admin.from(table).select("id").limit(0);
+    return { table, ready: !error };
+  }));
+  assert.ok(prerequisites.every(result => result.ready), `Apply migrations 001 and 002 and refresh the schema cache before live testing. Unavailable tables: ${prerequisites.filter(result => !result.ready).map(result => result.table).join(", ")}`);
   const users: string[] = [];
   const orgs = [randomUUID(), randomUUID()];
   const memberIds = [randomUUID(), randomUUID(), randomUUID(), randomUUID(), randomUUID()];

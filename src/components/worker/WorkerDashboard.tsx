@@ -106,7 +106,7 @@ export function WorkerDashboard({
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider">
             <span>Expected Pay (Month)</span>
-            <span className="text-emerald-700 font-bold">Statutory</span>
+            <span className="text-emerald-700 font-bold">Configured</span>
           </div>
           <div className="text-2xl font-black text-slate-900 tracking-tight">
             {earnings ? formatPaise(earnings.totalExpectedMinor) : "₹0.00"}
@@ -178,7 +178,7 @@ export function WorkerDashboard({
           </p>
         </div>
 
-        <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs self-start sm:self-auto">
+        <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs self-start sm:self-auto">
           <button
             type="button"
             onClick={() => setActiveFilter("ALL")}

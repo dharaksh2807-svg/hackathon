@@ -74,7 +74,7 @@ export function EmployerDashboard({
         {/* Metric 1: Expected Shift Obligations */}
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            <span>Statutory Wage Expected</span>
+            <span>Configured Wage Expected</span>
             <span className="text-emerald-700 font-bold">Rule Engine</span>
           </div>
           <div className="text-2xl font-black text-slate-900 tracking-tight">
@@ -85,11 +85,11 @@ export function EmployerDashboard({
           </div>
         </div>
 
-        {/* Metric 2: Disbursed / Recorded */}
+        {/* Metric 2: Recorded / Recorded */}
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider">
             <span>Employer Recorded Pay</span>
-            <span className="text-slate-600">Disbursed</span>
+            <span className="text-slate-600">Recorded</span>
           </div>
           <div className="text-2xl font-black text-slate-900 tracking-tight">
             {dashboardData ? formatPaise(dashboardData.totalRecordedMinor) : "₹0.00"}
@@ -118,7 +118,7 @@ export function EmployerDashboard({
           </div>
           <div className="text-xs text-slate-600">
             {(dashboardData?.underpaidShifts ?? 0) > 0
-              ? "Shifts where recorded pay is below statutory expected"
+              ? "Shifts where recorded pay is below configured expected"
               : "Full parity across recorded rosters"}
           </div>
         </div>
@@ -211,7 +211,7 @@ export function EmployerDashboard({
           {discrepantShifts.length === 0 ? (
             <EmptyState
               title="No Wage Discrepancies Found"
-              description="All completed shifts have employer-recorded pay that satisfies or exceeds statutory expectations."
+              description="All completed shifts have employer-recorded pay that satisfies or exceeds configured expectations."
             />
           ) : (
             <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-xs">
@@ -221,7 +221,7 @@ export function EmployerDashboard({
                     <tr>
                       <th className="py-3 px-4">Shift Details</th>
                       <th className="py-3 px-4">Worked Time</th>
-                      <th className="py-3 px-4 text-right">Statutory Expected</th>
+                      <th className="py-3 px-4 text-right">Configured Expected</th>
                       <th className="py-3 px-4 text-right">Employer Recorded</th>
                       <th className="py-3 px-4">Variance Status</th>
                       <th className="py-3 px-4 text-right">Action</th>
@@ -322,11 +322,7 @@ export function EmployerDashboard({
                         {dispute.status === "OPEN" ? (
                           <button
                             type="button"
-                            onClick={() => {
-                              if (shift) {
-                                setResolveModalDispute(dispute);
-                              }
-                            }}
+                            onClick={() => setResolveModalDispute(dispute)}
                             className="px-3.5 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
                           >
                             Adjudicate Case
@@ -376,7 +372,7 @@ export function EmployerDashboard({
                   <th className="py-3 px-4">Site / Role</th>
                   <th className="py-3 px-4">Shift Status</th>
                   <th className="py-3 px-4">Worked Time</th>
-                  <th className="py-3 px-4 text-right">Statutory Expected</th>
+                  <th className="py-3 px-4 text-right">Configured Expected</th>
                   <th className="py-3 px-4 text-right">Recorded Amount</th>
                   <th className="py-3 px-4">Comparison Parity</th>
                   <th className="py-3 px-4 text-right">Action</th>

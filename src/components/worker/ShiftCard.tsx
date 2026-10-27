@@ -74,7 +74,7 @@ export function ShiftCard({
             {shift.earnings ? formatMinutes(shift.earnings.workedMinutes) : "—"}
           </span>
           {shift.unpaidBreakMinutes > 0 && (
-            <span className="text-[11px] text-slate-400 block font-normal">
+            <span className="text-[11px] text-slate-500 block font-normal">
               Break: {shift.unpaidBreakMinutes}m
             </span>
           )}
@@ -85,8 +85,8 @@ export function ShiftCard({
           <span className="font-semibold text-emerald-800 text-sm">
             {shift.earnings ? formatPaise(shift.earnings.expectedMinor) : "Pending"}
           </span>
-          <span className="text-[11px] text-slate-400 block font-normal">
-            Statutory rule
+          <span className="text-[11px] text-slate-500 block font-normal">
+            Configured rule
           </span>
         </div>
 
@@ -95,7 +95,7 @@ export function ShiftCard({
           <span className="font-semibold text-slate-900 text-sm">
             {shift.recordedAmountMinor !== null ? formatPaise(shift.recordedAmountMinor) : "Not recorded"}
           </span>
-          <span className="text-[11px] text-slate-400 block font-normal">
+          <span className="text-[11px] text-slate-500 block font-normal">
             By employer
           </span>
         </div>
@@ -148,7 +148,7 @@ export function ShiftCard({
 
       {/* Action Footer */}
       <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 flex-wrap">
-        <div className="text-[11px] text-slate-400 font-mono">
+        <div className="text-[11px] text-slate-500 font-mono">
           ID: {shift.id.slice(0, 8)}…
         </div>
 
