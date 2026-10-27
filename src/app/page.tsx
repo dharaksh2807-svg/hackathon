@@ -9,7 +9,6 @@ import { Navbar, type NavView } from "@/components/Navbar";
 import { PersonaSwitcher } from "@/components/PersonaSwitcher";
 import { InvitationGate } from "@/components/InvitationGate";
 import { SignIn } from "@/components/SignIn";
-import { IntroSection } from "@/components/IntroSection";
 import { WorkerHome } from "@/components/worker/WorkerHome";
 import { WorkerDashboard } from "@/components/worker/WorkerDashboard";
 import { EmployerDashboard } from "@/components/employer/EmployerDashboard";
@@ -176,7 +175,7 @@ function FairShiftApp() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans pb-16 sm:pb-0">
+    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans">
       {/* Onboarding modal — for workers on first visit */}
       {showOnboarding && isWorker && (
         <WorkerOnboarding onComplete={completeOnboarding} />
@@ -225,9 +224,8 @@ function FairShiftApp() {
         onSignOut={signOut}
       />
 
-      {!isWorker && <IntroSection />}
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-5 sm:py-8 pb-24 sm:pb-8">
         <div className="flex flex-wrap items-center gap-3 mb-5 text-sm">
           <label htmlFor="report-month" className="font-medium text-slate-700">
             Reporting month (Asia/Kolkata)

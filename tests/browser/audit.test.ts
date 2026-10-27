@@ -183,3 +183,31 @@ test("an empty reporting month shows no historical earnings in the tracker or My
     assert.equal(await page.getByRole("button", { name: "View Pay Details", exact: true }).count(), 0);
   } finally { await browser.close(); }
 });
+
+
+test("source portal composition keeps worker earnings visible and removes the employer architecture banner", options, async () => {
+  const worker = await fixturePage();
+  try {
+    await worker.page.getByRole("button", { name: "Home — 🏠", exact: true }).first().click();
+    await worker.page.getByRole("heading", { name: "Daily Earnings Tracker", exact: true }).waitFor();
+    for (const label of ["My Work", "My Money", "Missing Money", "Get Help"]) {
+      assert.equal(await worker.page.getByRole("button", { name: new RegExp(`^${label} —`) }).count(), 1);
+    }
+    assert.ok(await worker.page.locator("header").evaluate((element: HTMLElement) => element.getBoundingClientRect().height) <= 60);
+    await worker.page.getByRole("button", { name: /^My Money —/ }).click();
+    await worker.page.getByRole("heading", { name: "Daily Earnings Tracker", exact: true }).waitFor();
+    await worker.page.getByRole("button", { name: /23 Oct.*Expected/ }).click();
+    await worker.page.getByRole("heading", { name: /23 Oct/ }).waitFor();
+    await worker.page.getByRole("button", { name: "Language", exact: true }).first().click();
+    await worker.page.getByRole("button", { name: /Hindi/ }).click();
+    await worker.page.getByRole("heading", { name: TRANSLATIONS.hi.dailyEarningsTitle, exact: true }).waitFor();
+  } finally { await worker.browser.close(); }
+  const employer = await fixturePage("construction", "EMPLOYER");
+  try {
+    assert.equal(await employer.page.getByRole("button", { name: /Architecture Guide/ }).count(), 0);
+    assert.ok(await employer.page.locator("main").evaluate((element: HTMLElement) => element.getBoundingClientRect().top) < 180);
+    await employer.page.getByRole("button", { name: /^Workers/ }).click();
+    await employer.page.getByRole("button", { name: "Add Worker", exact: true }).click();
+    await employer.page.getByRole("dialog", { name: "Add Worker to Your Team", exact: true }).waitFor();
+  } finally { await employer.browser.close(); }
+});

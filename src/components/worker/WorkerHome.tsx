@@ -104,16 +104,16 @@ export function WorkerHome({
 
         {/* Quick money summary */}
         {earnings && (
-          <div className="mt-4 grid grid-cols-1 min-[400px]:grid-cols-3 gap-3">
+          <div className="mt-4 grid grid-cols-3 gap-3">
             <div className="bg-white/10 rounded-xl p-3 text-center">
               <div className="text-xs text-slate-400 mb-1">{t("moneyIShouldGet")}</div>
-              <div className="text-base font-black text-emerald-300 leading-tight">
+              <div className="text-sm sm:text-base font-black text-emerald-300 leading-tight">
                 {formatPaise(earnings.totalExpectedMinor)}
               </div>
             </div>
             <div className="bg-white/10 rounded-xl p-3 text-center">
               <div className="text-xs text-slate-400 mb-1">{t("moneyMyEmployerEntered")}</div>
-              <div className="text-base font-black text-white leading-tight">
+              <div className="text-sm sm:text-base font-black text-white leading-tight">
                 {formatPaise(earnings.totalRecordedMinor)}
               </div>
             </div>
@@ -123,7 +123,7 @@ export function WorkerHome({
                 : "bg-white/10"
             }`}>
               <div className="text-xs text-slate-400 mb-1">{t("moneyStillMissing")}</div>
-              <div className={`text-base font-black leading-tight ${
+              <div className={`text-sm sm:text-base font-black leading-tight ${
                 totalShortfallMinor > 0 ? "text-amber-300" : "text-slate-300"
               }`}>
                 {formatPaise(totalShortfallMinor)}

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import type { Shift, Dispute, EarningsResponse, PortalIdentity } from "@/lib/api-client/types";
+import { DailyEarningsTracker } from "./DailyEarningsTracker";
 import { ShiftCard } from "./ShiftCard";
 import { CheckOutModal } from "./CheckOutModal";
 import { EarningsBreakdownModal } from "./EarningsBreakdownModal";
@@ -103,6 +104,7 @@ export function WorkerDashboard({
 
   return (
     <div className="space-y-6">
+      {activeFilter === "COMPLETED" && <DailyEarningsTracker shifts={earnings?.shifts ?? []} />}
       {/* Monthly Earnings Summary Cards — worker-friendly labels */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Expected Earnings */}
